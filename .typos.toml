@@ -1,0 +1,13 @@
+[default]
+locale = "en"
+
+[files]
+extend-exclude = ["flake.lock", "*.lock", ".direnv"]
+
+[default.extend-words]
+dae = "dae"
+daed = "daed"
+Sur = "Sur"
+
+[default.extend-identifiers]
+W1ngD1nGa5ter = "W1ngD1nGa5ter"

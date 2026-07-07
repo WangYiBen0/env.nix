@@ -1,0 +1,12 @@
+# Ignore build outputs from performing a nix-build or `nix build` command
+result
+result-*
+
+# Ignore automatically generated direnv output
+.direnv
+
+# Ignore NixOS interactive test driver history
+**/.nixos-test-history
+
+# Ignore automatically generated pre-commit-config
+.pre-commit-config.yaml
