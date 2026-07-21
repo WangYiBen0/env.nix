@@ -11,5 +11,7 @@ let
         ) (builtins.readDir dir)
       )
     );
+
+  scanPackages = import ./packages.nix;
 in
-builtins.foldl' (acc: file: acc // (import file lib)) { inherit scanNixFiles; } (scanNixFiles ./.)
+{ inherit scanNixFiles scanPackages; } // (import ./filesystem.nix lib) // (import ./string.nix lib)

@@ -49,6 +49,7 @@
     gcc
     clang
     texliveFull
+    graalvmPackages.graalvm-oracle
 
     # nix
     comma
@@ -57,9 +58,6 @@
     nix-index
     nix-inspect
     manix
-
-    # amusement
-    graalvmPackages.graalvm-oracle
   ];
 
   environment.variables = {

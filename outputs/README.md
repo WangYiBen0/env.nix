@@ -2,14 +2,17 @@
 
 ## Flake Outputs
 
-| Output                             | Description                                                 |
-| ---------------------------------- | ----------------------------------------------------------- |
-| `nixosConfigurations.<host>`       | NixOS system configs (NixOS module HM included)             |
-| `homeConfigurations.<user>@<host>` | Standalone HM configs (for debugging)                       |
-| `formatter.<system>`               | nixfmt                                                      |
-| `checks.<system>.pre-commit`       | Pre-commit hooks (nixfmt, deadnix, statix, typos, prettier) |
-| `devShells.<system>.default`       | Dev shell with linting tools                                |
-| `lib`                              | Custom lib (scanNixFiles, listSubDir)                       |
+| Output                             | Description                                                        |
+| ---------------------------------- | ------------------------------------------------------------------ |
+| `nixosConfigurations.<host>`       | NixOS system configs (NixOS module HM included)                    |
+| `homeConfigurations.<user>@<host>` | Standalone HM configs (for debugging)                              |
+| `packages.<system>`                | Custom packages built from `pkgs/` (fonts, agent, etc.)            |
+| `packages.<system>.fonts.<name>`   | Font packages (alias: `packages.<system>.<name>`)                  |
+| `overlays.default`                 | Project overlay (adds custom packages to nixpkgs)                  |
+| `lib`                              | Custom lib (scanNixFiles, scanPackages, listSubDir, lastAfterDash) |
+| `formatter.<system>`               | nixfmt                                                             |
+| `checks.<system>.pre-commit`       | Pre-commit hooks (nixfmt, deadnix, statix, typos, prettier)        |
+| `devShells.<system>.default`       | Dev shell with linting tools                                       |
 
 ## Deployment
 
@@ -29,9 +32,41 @@ Standalone Home Manager configurations are also generated:
 nh home switch -- --flake .#w1ngd1nga5ter@matebook16d
 ```
 
+## Custom Packages
+
+Custom packages live in `pkgs/` and are auto-discovered by `lib.scanPackages`:
+
+```
+pkgs/
+├── fonts/
+│   ├── lxgw-neozhisong/   # LXGW Neo ZhiSong
+│   ├── lxgw-zhenkai/      # LXGW ZhenKai GB
+│   └── zhuque-fangsong/   # Zhuque FangSong
+└── agent/
+    └── miyu/              # Miyu AI agent
+```
+
+Build individual packages:
+
+```bash
+nix build .#miyu                    # Build agent
+nix build .#fonts.lxgw-zhenkai      # Build font (namespaced)
+nix build .#lxgw-zhenkai            # Build font (top-level alias)
+```
+
+The overlay (`overlays/packages.nix`) also makes these available system-wide via `pkgs.*` and `pkgs.fonts.*`.
+
+## Overlays
+
+Overlays are defined in `overlays/` and auto-merged by `overlays/default.nix`. Currently:
+
+- `overlays/packages.nix` — Adds custom packages from `pkgs/` to nixpkgs
+
+New overlay files added to `overlays/` are automatically picked up.
+
 ## Add a New Host
 
-1. Create a directory under `hosts/x86_64-linux/<hostname>/`
+1. Create a directory under `hosts/<arch>/<hostname>/`
 2. Add the required files:
    - `default.nix` — Host-specific NixOS config + `machine.profiles.desktop = true`
    - `hardware.nix` — Hardware config (copy from an existing host as reference)
@@ -43,7 +78,7 @@ nh home switch -- --flake .#w1ngd1nga5ter@matebook16d
    - Boot configuration
    - `state-version.nix`
 
-The build system auto-discovers hosts and users via `lib.scanNixFiles` and `lib.listSubDir`.
+The build system auto-discovers hosts, architectures, and users via `lib.scanNixFiles`, `lib.listSubDir`, and `lib.scanPackages`.
 
 ## Flake Inputs
 

@@ -8,29 +8,42 @@ let
   myLib = import ./../lib/default.nix nixpkgs.lib;
   allSystems = myLib.listSubDir ./.;
   forAllSystems = func: (nixpkgs.lib.genAttrs allSystems func);
+
+  overlayFn = import ../overlays inputs;
+
   pkgsFor =
     system:
     import nixpkgs {
       inherit system;
-      overlays = import ../overlays inputs;
+      overlays = [ overlayFn ];
     };
 
-  hostsDir = ./../hosts/x86_64-linux;
-  hostNames = builtins.filter (name: builtins.pathExists (hostsDir + "/${name}/home")) (
-    myLib.listSubDir hostsDir
-  );
-  allUsers = builtins.concatMap (
-    host:
+  hostsBaseDir = ./../hosts;
+  architectures = myLib.listSubDir hostsBaseDir;
+
+  allUserEntries = builtins.concatMap (
+    arch:
     let
-      homeDir = hostsDir + "/${host}/home";
-      userNames = builtins.filter (name: builtins.pathExists (homeDir + "/${name}/standalone")) (
-        myLib.listSubDir homeDir
+      hostsDir = hostsBaseDir + "/${arch}";
+      hostNames = builtins.filter (name: builtins.pathExists (hostsDir + "/${name}/home")) (
+        myLib.listSubDir hostsDir
       );
     in
-    map (user: { inherit host user; }) userNames
-  ) hostNames;
+    builtins.concatMap (
+      host:
+      let
+        homeDir = hostsDir + "/${host}/home";
+        userNames = builtins.filter (name: builtins.pathExists (homeDir + "/${name}/standalone")) (
+          myLib.listSubDir homeDir
+        );
+      in
+      map (user: {
+        inherit host user;
+        system = arch;
+      }) userNames
+    ) hostNames
+  ) architectures;
 
-  # standalone 模式下设置 nix.package，NixOS module 模式会继承系统配置
   standaloneNixModule = { pkgs, ... }: { nix.package = pkgs.lix; };
 in
 {
@@ -48,7 +61,7 @@ in
         prettier = {
           enable = true;
           settings = {
-            write = true; # Automatically format files
+            write = true;
           };
         };
 
@@ -57,14 +70,13 @@ in
         typos = {
           enable = true;
           settings = {
-            write = true; # Automatically fix typos
+            write = true;
           };
         };
       };
     };
   });
 
-  # Development Shells
   devShells = forAllSystems (
     system:
     let
@@ -73,19 +85,20 @@ in
     {
       default = pkgs.mkShell {
         packages = with pkgs; [
-          # Nix-related
           nixfmt
           deadnix
           statix
-          # spell checker
           typos
-          # code formatter
           prettier
         ];
         inherit (self.checks.${system}.pre-commit) shellHook;
       };
     }
   );
+
+  packages = forAllSystems (system: myLib.scanPackages (pkgsFor system) ../pkgs);
+
+  overlays.default = overlayFn;
 
   inherit (import ./../hosts inputs) nixosConfigurations;
 
@@ -94,14 +107,15 @@ in
       {
         host,
         user,
+        system,
       }:
       {
         name = "${user}@${host}";
         value = inputs.home-manager.lib.homeManagerConfiguration {
-          pkgs = pkgsFor "x86_64-linux";
+          pkgs = pkgsFor system;
           modules = [
-            (hostsDir + "/${host}/home/${user}")
-            (hostsDir + "/${host}/home/${user}/standalone")
+            (hostsBaseDir + "/${system}/${host}/home/${user}")
+            (hostsBaseDir + "/${system}/${host}/home/${user}/standalone")
             standaloneNixModule
           ];
           extraSpecialArgs = {
@@ -109,6 +123,6 @@ in
           };
         };
       }
-    ) allUsers
+    ) allUserEntries
   );
 }

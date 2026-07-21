@@ -5,7 +5,6 @@ let
   hosts = myLib.listSubDir ./.;
   # inputs 是 flake 传入的全部 inputs（不包含我们自己加的 system）
   inputs = removeAttrs args [ "system" ];
-  overlays = import ../../overlays inputs;
 in
 lib.genAttrs hosts (
   hostname:
@@ -15,10 +14,8 @@ lib.genAttrs hosts (
       inherit hostname myLib inputs;
     };
     modules = [
-      {
-        nixpkgs.overlays = overlays;
-      }
       (./. + "/${hostname}")
+      ../../modules/common
       ../../modules/nixos
     ];
   }

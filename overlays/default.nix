@@ -1,13 +1,13 @@
-# execute and import all overlay files in the current directory with the given args
-args:
+# Merge all overlay files in this directory into a single overlay function.
+# Usage: import ../overlays inputs → (final: prev: mergedAttrs)
+inputs:
 let
-  lib = args.nixpkgs.lib;
+  lib = inputs.nixpkgs.lib;
+  overlayFiles = builtins.attrNames (
+    lib.attrsets.filterAttrs (
+      name: type: (type == "regular") && (lib.strings.hasSuffix ".nix" name) && (name != "default.nix")
+    ) (builtins.readDir ./.)
+  );
+  overlayList = map (f: import (./. + "/${f}") inputs) overlayFiles;
 in
-map (f: (import (./. + "/${f}") args)) # execute and import the overlay file
-  (
-    builtins.attrNames (
-      lib.attrsets.filterAttrs # find all overlay files in the current directory
-        (name: type: (type == "regular") && (lib.strings.hasSuffix ".nix" name) && (name != "default.nix"))
-        (builtins.readDir ./.)
-    )
-  )
+final: prev: builtins.foldl' (acc: o: acc // (o final prev)) { } overlayList

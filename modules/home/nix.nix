@@ -4,4 +4,6 @@
   nix.settings = { };
 
   catppuccin.cache.enable = true;
+
+  programs.home-manager.enable = true;
 }

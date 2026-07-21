@@ -5,11 +5,15 @@ My all-in-one environment configuration, including NixOS & Home Manager.
 ## Quick Start
 
 ```bash
-# Deploy everything (NixOS + Home Manager)
+# Deploy everything (NixOS + Home Manager as NixOS module)
 nh os switch .
 
 # Debug Home Manager standalone
 nh home switch -- --flake .#w1ngd1nga5ter@matebook16d
+
+# Build a custom package
+nix build .#miyu
+nix build .#fonts.lxgw-zhenkai
 ```
 
 ## Project Structure
@@ -19,10 +23,10 @@ nh home switch -- --flake .#w1ngd1nga5ter@matebook16d
 ├── flake.nix                 # Flake entry, defines inputs
 ├── outputs/                  # Flake outputs, deployment, dev tools
 ├── hosts/                    # Per-host NixOS + HM configs
-├── modules/                  # Shared NixOS & HM modules
-├── lib/                      # Custom lib (scanNixFiles, listSubDir)
-├── overlays/                 # Package overlays
-└── pkgs/                     # Custom packages (fonts)
+├── modules/                  # Shared NixOS, HM & common modules
+├── lib/                      # Custom lib (scanNixFiles, scanPackages, listSubDir, lastAfterDash)
+├── overlays/                 # Package overlays (auto-merged from all .nix files)
+└── pkgs/                     # Custom packages (fonts, agent, etc.)
 ```
 
 ## Documentation
@@ -30,8 +34,8 @@ nh home switch -- --flake .#w1ngd1nga5ter@matebook16d
 | Directory                     | Docs                                         |
 | ----------------------------- | -------------------------------------------- |
 | [hosts/](hosts/README.md)     | Managed machines, host auto-discovery        |
-| [modules/](modules/README.md) | Profile system, NixOS & HM modules           |
-| [outputs/](outputs/README.md) | Deployment, flake outputs, dev tools, caches |
+| [modules/](modules/README.md) | Profile system, NixOS, HM & common modules   |
+| [outputs/](outputs/README.md) | Flake outputs, deployment, dev tools, caches |
 
 ## License
 

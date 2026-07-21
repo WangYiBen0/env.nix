@@ -1,7 +1,9 @@
+{ pkgs, ... }:
 {
   users.users.w1ngd1nga5ter = {
     isNormalUser = true;
     description = "W1ngD1nGa5ter";
+    shell = pkgs.fish;
     extraGroups = [
       "wheel"
       "video"

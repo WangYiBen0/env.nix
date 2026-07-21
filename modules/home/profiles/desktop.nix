@@ -9,6 +9,7 @@
 
   config = lib.mkIf config.machine.profiles.desktop {
     home.packages = with pkgs; [
+      agent.miyu
       bluetui
       ironbar
       libreoffice-qt6-fresh
