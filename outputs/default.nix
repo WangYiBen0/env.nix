@@ -9,13 +9,11 @@ let
   allSystems = myLib.listSubDir ./.;
   forAllSystems = func: (nixpkgs.lib.genAttrs allSystems func);
 
-  overlayFn = import ../overlays inputs;
-
   pkgsFor =
     system:
     import nixpkgs {
       inherit system;
-      overlays = [ overlayFn ];
+      overlays = [ (import ../overlays inputs) ];
     };
 
   hostsBaseDir = ./../hosts;
@@ -66,13 +64,7 @@ in
         };
 
         statix.enable = true;
-
-        typos = {
-          enable = true;
-          settings = {
-            write = true;
-          };
-        };
+        typos.enable = true;
       };
     };
   });
@@ -98,7 +90,7 @@ in
 
   packages = forAllSystems (system: myLib.scanPackages (pkgsFor system) ../pkgs);
 
-  overlays.default = overlayFn;
+  overlays.default = import ./../overlays inputs;
 
   inherit (import ./../hosts inputs) nixosConfigurations;
 

@@ -26,10 +26,17 @@
         ++ (with pkgs; [
           stdenv.cc.cc
 
+          fna3d
           fuse
+          gtk2
+          gtk2-x11
+          gtk3
+          gtk3-x11
+          gtk4
           icu
           libgdiplus
-          gtk2-x11
+          sdl3
+          SDL2
         ]);
     };
 

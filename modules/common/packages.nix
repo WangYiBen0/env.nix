@@ -41,6 +41,8 @@
     clock-rs
     trashy
     wiremix
+    obs-studio
+    chafa
 
     # im
     qq

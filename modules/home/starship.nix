@@ -9,7 +9,7 @@
 
         # 主格式布局
         format = ''
-          $shlvl $cmd_duration 󰜥 $directory $git_branch $nix_shell
+          $shlvl $cmd_duration 󰜥 $directory $git_branch $nix_shell $python
           $character'';
 
         character = {
@@ -72,10 +72,24 @@
           time_format = "%T";
         };
 
+        python = {
+          disabled = false;
+          symbol = "󰌠 ";
+          style = "bold bg:lavender fg:black";
+          format = "󰜥 [](bold fg:lavender)[$symbol$version](bold bg:lavender fg:black)[](bold fg:lavender)";
+          # python_binary = [
+          #   "uv"
+          #   "run"
+          #   "--no-python-downloads"
+          #   "--no-project"
+          #   "python"
+          # ];
+        };
+
         username = {
           style_user = "bold bg:cyan fg:black";
           style_root = "red bold";
-          format = "[](bold fg:cyan)[$user]($style)";
+          format = "[](bold fg:cyan)[$user]($style)[](bold fg:cyan)";
           disabled = false;
           show_always = true;
         };

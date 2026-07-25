@@ -51,6 +51,7 @@
         libreoffice-qt
         inkscape
         hmcl
+        olympus
       ];
 
       variables = {
