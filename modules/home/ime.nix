@@ -5,7 +5,7 @@
   ...
 }:
 
-lib.mkIf config.machine.profiles.desktop {
+lib.mkIf config.machine.modules.ime.enable {
   i18n.inputMethod = {
     type = "fcitx5";
     enable = true;
@@ -29,7 +29,5 @@ lib.mkIf config.machine.profiles.desktop {
   home.file."./.local/share/fcitx5/rime/default.custom.yaml".text = ''
     patch:
       __include: rime_ice_suggestion:/
-      # schema_list:
-      #   - schema: rime_ice
   '';
 }

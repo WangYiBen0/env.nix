@@ -1,5 +1,6 @@
 {
   imports = [
+    ../../../../../modules/common/options.nix
     ../../../../../modules/home
   ];
 

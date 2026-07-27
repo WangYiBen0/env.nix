@@ -6,7 +6,7 @@
   ...
 }:
 
-lib.mkIf config.machine.profiles.desktop {
+lib.mkIf config.machine.modules.font.enable {
   home.packages =
     (with pkgs; [
       maple-mono.NF-CN

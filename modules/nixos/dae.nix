@@ -1,15 +1,22 @@
-{ inputs, ... }:
+{
+  inputs,
+  config,
+  lib,
+  ...
+}:
 {
   imports = [
     inputs.daeuniverse.nixosModules.daed
   ];
 
-  services = {
-    daed = {
-      enable = true;
-      openFirewall = {
+  config = lib.mkIf config.machine.modules.dae.enable {
+    services = {
+      daed = {
         enable = true;
-        port = 12345;
+        openFirewall = {
+          enable = true;
+          port = 12345;
+        };
       };
     };
   };

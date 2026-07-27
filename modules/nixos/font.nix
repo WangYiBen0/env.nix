@@ -5,7 +5,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.machine.profiles.desktop {
+  config = lib.mkIf config.machine.modules.font.enable {
     fonts = {
       enableDefaultPackages = true;
 

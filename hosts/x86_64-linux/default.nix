@@ -14,7 +14,7 @@ lib.genAttrs hosts (
       inherit hostname myLib inputs;
     };
     modules = [
-      (./. + "/${hostname}")
+      ./${hostname}
       ../../modules/common
       ../../modules/nixos
     ];

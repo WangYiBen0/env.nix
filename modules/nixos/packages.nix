@@ -50,6 +50,8 @@
     # develop
     gcc
     clang
+    cargo
+    rustc
     texliveFull
     graalvmPackages.graalvm-oracle
 

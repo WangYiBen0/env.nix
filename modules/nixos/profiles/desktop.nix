@@ -5,18 +5,23 @@
   ...
 }:
 {
-  options.machine.profiles.desktop = lib.mkEnableOption "desktop environment";
-
   config = lib.mkIf config.machine.profiles.desktop {
+    machine.modules = {
+      niri.enable = true;
+      font.enable = true;
+      compat.enable = true;
+      dae.enable = true;
+    };
+
     services = {
       displayManager.plasma-login-manager.enable = true;
       desktopManager.plasma6.enable = true;
     };
 
-    xdg.portal = {
-      enable = true;
-      extraPortals = [ pkgs.xdg-desktop-portal-gnome ];
-    };
+    # xdg.portal = {
+    #   enable = true;
+    #   extraPortals = [ pkgs.xdg-desktop-portal-gnome ];
+    # };
 
     programs = {
       hyprland.enable = true;

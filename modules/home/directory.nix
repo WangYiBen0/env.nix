@@ -13,7 +13,7 @@ let
     "公共" = "publicShare";
   };
 in
-lib.mkIf config.machine.profiles.desktop {
+lib.mkIf config.machine.modules.directory.enable {
   xdg.userDirs = {
     enable = true;
     # createDirectories = true; # 可能导致现有程序崩溃，造成大批量重启淹没终端输出

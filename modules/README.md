@@ -1,38 +1,57 @@
 # Modules
 
-## Profile System
+## Module System
 
-Profiles control which features are enabled per host. Set in the host's `default.nix`:
+The module system uses two layers:
+
+1. **Profiles** — high-level presets that set multiple module options at once
+2. **Modules** — individual features with their own enable options
+
+Set a profile in the host's `default.nix`:
 
 ```nix
-machine.profiles.desktop = true;  # Plasma6, niri, hyprland, steam, fonts, IME, etc.
+machine.profiles.desktop = true;  # enables niri, kitty, fonts, IME, etc.
 machine.profiles.server = true;   # (reserved for future use)
 ```
 
-Shared modules (overlays, packages, nix, system, services, dae) are always loaded regardless of profile.
+Or enable individual modules directly:
 
-## What Each Profile Enables
+```nix
+machine.modules.niri.enable = true;
+machine.modules.kitty.enable = true;
+machine.modules.font.enable = true;
+```
 
-### Desktop Profile
+## Option Definitions
 
-**NixOS level:**
+All `machine.*` options are defined in `modules/common/options.nix` (single source of truth). Profiles set module options, and modules check their own enable options.
 
-- Plasma6 + login manager
-- niri, hyprland
-- Steam + gamescope + protontricks + extest
-- System fonts (Noto, Maple Mono, JetBrains Mono, etc.)
-- Flatpak, nix-ld, podman
+## What Each Module Enables
 
-**Home Manager level:**
+### NixOS Modules
 
-- Kitty terminal
-- Fcitx5 + RIME + rime-ice
-- Anyrun / Fuzzel launcher
-- User fonts (Apple Fonts, LXGW series)
-- GTK/Qt theme (WhiteSur + Catppuccin)
-- XDG user directories
-- Niri compositor config
-- Zen browser, swaync, polkit agent
+| Module | Option                          | Description                                           |
+| ------ | ------------------------------- | ----------------------------------------------------- |
+| font   | `machine.modules.font.enable`   | System fonts (Noto, Maple Mono, JetBrains Mono, etc.) |
+| compat | `machine.modules.compat.enable` | nix-ld, flatpak, podman, Wine                         |
+| dae    | `machine.modules.dae.enable`    | dae/dae proxy                                         |
+
+### Home Manager Modules
+
+| Module    | Option                             | Description                 |
+| --------- | ---------------------------------- | --------------------------- |
+| niri      | `machine.modules.niri.enable`      | Niri compositor config      |
+| kitty     | `machine.modules.kitty.enable`     | Kitty terminal              |
+| font      | `machine.modules.font.enable`      | User fonts + fontconfig     |
+| ime       | `machine.modules.ime.enable`       | Fcitx5 + RIME + rime-ice    |
+| launcher  | `machine.modules.launcher.enable`  | Fuzzel launcher             |
+| theme     | `machine.modules.theme.enable`     | Cursor, GTK, Qt, Catppuccin |
+| directory | `machine.modules.directory.enable` | XDG user directories        |
+| variable  | `machine.modules.variable.enable`  | Desktop session variables   |
+
+### Always-Loaded Modules
+
+Shared modules (overlays, packages, nix, system, services) are always loaded regardless of profile.
 
 ## Directory Structure
 
@@ -40,50 +59,54 @@ Shared modules (overlays, packages, nix, system, services, dae) are always loade
 modules/
 ├── common/                   # Shared between NixOS and Home Manager
 │   ├── default.nix           # Auto-imports all .nix via scanNixFiles
+│   ├── options.nix           # All machine.* option definitions
 │   ├── overlays.nix          # Applies project overlays at NixOS level
-│   └── packages.nix          # Shared system packages (git, neovim, fish, nh, etc.)
+│   └── nix.nix               # Nix settings, caches, GC
 ├── nixos/                    # NixOS system-level modules
 │   ├── default.nix           # Auto-imports all .nix via scanNixFiles
-│   ├── nix.nix               # Nix settings, caches, GC
+│   ├── modules.nix           # External module imports (home-manager, niri)
+│   ├── nix.nix               # Nix channel config
 │   ├── system.nix            # Networking, timezone, locale, boot
+│   ├── packages.nix          # System packages
 │   ├── services.nix          # PipeWire, SSH, Bluetooth, firewall
-│   ├── dae.nix               # dae/dae proxy
-│   ├── compat.nix            # nix-ld, flatpak, podman, Wine (desktop only)
-│   ├── font.nix              # System fonts (desktop only)
+│   ├── dae.nix               # dae/dae proxy (gated: machine.modules.dae.enable)
+│   ├── compat.nix            # nix-ld, flatpak, podman, Wine (gated: machine.modules.compat.enable)
+│   ├── font.nix              # System fonts (gated: machine.modules.font.enable)
 │   └── profiles/
-│       ├── default.nix       # Auto-imports profile modules
-│       ├── desktop.nix       # Desktop option definition + config
-│       └── server.nix        # Server option definition
-└── home/                     # Home Manager user-level modules
-    ├── default.nix           # Auto-imports all .nix via scanNixFiles
-    ├── nix.nix               # HM nix settings
-    ├── shell.nix             # Bash, Fish, Bat, Eza, Zellij, Zoxide, aliases
-    ├── starship.nix          # Starship prompt
-    ├── git.nix               # Git config
-    ├── editor.nix            # Nixvim
-    ├── packages.nix          # User packages
-    ├── yazi.nix              # Yazi file manager + plugins
-    ├── niri.nix              # Niri compositor config
-    ├── kitty.nix             # Kitty terminal (desktop only)
-    ├── theme.nix             # Cursor, GTK, Qt, Catppuccin (desktop only)
-    ├── ime.nix               # Fcitx5 + Rime (desktop only)
-    ├── font.nix              # User fonts + fontconfig (desktop only)
-    ├── launcher.nix          # Anyrun + Fuzzel (desktop only)
-    ├── variable.nix          # Session variables (desktop only)
-    ├── directory.nix         # XDG user dirs (desktop only)
-    ├── nix-index.nix         # nix-index + comma
-    ├── kitty/                # Kitten scripts (scroll_mark.py, search.py)
-    ├── niri/                 # Niri config.kdl
-    └── profiles/
-        ├── default.nix       # Auto-imports profile modules
-        ├── desktop.nix       # Desktop option definition + extra config
-        └── server.nix        # Server option definition
+│       ├── default.nix       # Imports all profiles
+│       ├── desktop.nix       # Sets module options for desktop
+│       └── server.nix        # (reserved)
+├── home/                     # Home Manager user-level modules
+│   ├── default.nix           # Auto-imports all .nix via scanNixFiles
+│   ├── modules.nix           # External module imports (catppuccin, nixvim, zen)
+│   ├── nix.nix               # HM nix settings
+│   ├── shell.nix             # Bash, Fish, Bat, Eza, Zellij, Zoxide, aliases
+│   ├── starship.nix          # Starship prompt
+│   ├── git.nix               # Git config
+│   ├── editor.nix            # Nixvim
+│   ├── packages.nix          # User packages
+│   ├── yazi.nix              # Yazi file manager + plugins
+│   ├── nix-index.nix         # nix-index + comma
+│   ├── niri.nix              # Niri config (gated: machine.modules.niri.enable)
+│   ├── kitty.nix             # Kitty terminal (gated: machine.modules.kitty.enable)
+│   ├── theme.nix             # GTK/Qt theme (gated: machine.modules.theme.enable)
+│   ├── ime.nix               # Fcitx5 (gated: machine.modules.ime.enable)
+│   ├── font.nix              # User fonts (gated: machine.modules.font.enable)
+│   ├── launcher.nix          # Fuzzel (gated: machine.modules.launcher.enable)
+│   ├── variable.nix          # Session variables (gated: machine.modules.variable.enable)
+│   ├── directory.nix         # XDG user dirs (gated: machine.modules.directory.enable)
+│   ├── kitty/                # Kitten scripts (scroll_mark.py, search.py)
+│   └── profiles/
+│       ├── default.nix       # Imports all profiles
+│       ├── desktop.nix       # Sets module options for desktop
+│       └── server.nix        # (reserved)
+├── home-standalone/          # Standalone Home Manager modules
+└── home-as-module/           # Home Manager as NixOS module
 ```
-
-All modules use `scanNixFiles` for auto-discovery. Desktop-only modules are gated with `mkIf config.machine.profiles.desktop`.
 
 ## Loading Order
 
-1. `modules/common/` — loaded first (overlays, shared packages)
+1. `modules/common/` — loaded first (options, overlays, shared packages)
 2. `modules/nixos/` or `modules/home/` — loaded by host configs
-3. Host-specific overrides — loaded last (highest priority)
+3. Profile sets module options → modules check their enable options
+4. Host-specific overrides — loaded last (highest priority)

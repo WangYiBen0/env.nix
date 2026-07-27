@@ -3,6 +3,7 @@ _: {
     ./bootloader.nix
     ./disko.nix
     ./hardware.nix
+    ./users
     ./home.nix
   ];
 

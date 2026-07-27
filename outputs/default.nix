@@ -5,7 +5,7 @@
   ...
 }@inputs:
 let
-  myLib = import ./../lib/default.nix nixpkgs.lib;
+  myLib = import ../lib/default.nix nixpkgs.lib;
   allSystems = myLib.listSubDir ./.;
   forAllSystems = func: (nixpkgs.lib.genAttrs allSystems func);
 
@@ -16,105 +16,29 @@ let
       overlays = [ (import ../overlays inputs) ];
     };
 
-  hostsBaseDir = ./../hosts;
-  architectures = myLib.listSubDir hostsBaseDir;
+  hosts = import ../hosts inputs;
 
-  allUserEntries = builtins.concatMap (
-    arch:
-    let
-      hostsDir = hostsBaseDir + "/${arch}";
-      hostNames = builtins.filter (name: builtins.pathExists (hostsDir + "/${name}/home")) (
-        myLib.listSubDir hostsDir
-      );
-    in
-    builtins.concatMap (
-      host:
-      let
-        homeDir = hostsDir + "/${host}/home";
-        userNames = builtins.filter (name: builtins.pathExists (homeDir + "/${name}/standalone")) (
-          myLib.listSubDir homeDir
-        );
-      in
-      map (user: {
-        inherit host user;
-        system = arch;
-      }) userNames
-    ) hostNames
-  ) architectures;
-
-  standaloneNixModule = { pkgs, ... }: { nix.package = pkgs.lix; };
+  args = {
+    inherit
+      self
+      nixpkgs
+      git-hooks
+      inputs
+      myLib
+      allSystems
+      forAllSystems
+      pkgsFor
+      hosts
+      ;
+  };
 in
 {
+  formatter = import ./formatter.nix args;
+  checks = import ./checks.nix args;
+  devShells = import ./devShells.nix args;
+  packages = import ./packages.nix args;
+
   lib = myLib;
-
-  formatter = forAllSystems (system: (pkgsFor system).nixfmt);
-
-  checks = forAllSystems (system: {
-    pre-commit = git-hooks.lib.${system}.run {
-      src = ./..;
-      hooks = {
-        nixfmt.enable = true;
-        deadnix.enable = true;
-
-        prettier = {
-          enable = true;
-          settings = {
-            write = true;
-          };
-        };
-
-        statix.enable = true;
-        typos.enable = true;
-      };
-    };
-  });
-
-  devShells = forAllSystems (
-    system:
-    let
-      pkgs = pkgsFor system;
-    in
-    {
-      default = pkgs.mkShell {
-        packages = with pkgs; [
-          nixfmt
-          deadnix
-          statix
-          typos
-          prettier
-        ];
-        inherit (self.checks.${system}.pre-commit) shellHook;
-      };
-    }
-  );
-
-  packages = forAllSystems (system: myLib.scanPackages (pkgsFor system) ../pkgs);
-
-  overlays.default = import ./../overlays inputs;
-
-  inherit (import ./../hosts inputs) nixosConfigurations;
-
-  homeConfigurations = builtins.listToAttrs (
-    map (
-      {
-        host,
-        user,
-        system,
-      }:
-      {
-        name = "${user}@${host}";
-        value = inputs.home-manager.lib.homeManagerConfiguration {
-          pkgs = pkgsFor system;
-          modules = [
-            (hostsBaseDir + "/${system}/${host}/home/${user}")
-            (hostsBaseDir + "/${system}/${host}/home/${user}/standalone")
-            standaloneNixModule
-          ];
-          extraSpecialArgs = {
-            inherit self inputs;
-          };
-        };
-      }
-    ) allUserEntries
-  );
+  overlays.default = import ../overlays inputs;
+  inherit (hosts) nixosConfigurations homeConfigurations;
 }

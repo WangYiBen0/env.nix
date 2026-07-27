@@ -11,7 +11,5 @@ let
         ) (builtins.readDir dir)
       )
     );
-
-  scanPackages = import ./packages.nix;
 in
-{ inherit scanNixFiles scanPackages; } // (import ./filesystem.nix lib) // (import ./string.nix lib)
+{ inherit scanNixFiles; } // (import ./filesystem.nix lib) // (import ./string.nix lib)

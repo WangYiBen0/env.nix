@@ -5,7 +5,7 @@
   ...
 }:
 
-lib.mkIf config.machine.profiles.desktop {
+lib.mkIf config.machine.modules.theme.enable {
   home.pointerCursor = {
     enable = true;
     name = "WhiteSur-cursors";

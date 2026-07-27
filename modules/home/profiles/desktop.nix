@@ -5,9 +5,18 @@
   ...
 }:
 {
-  options.machine.profiles.desktop = lib.mkEnableOption "desktop environment";
-
   config = lib.mkIf config.machine.profiles.desktop {
+    machine.modules = {
+      niri.enable = true;
+      kitty.enable = true;
+      font.enable = true;
+      ime.enable = true;
+      launcher.enable = true;
+      theme.enable = true;
+      directory.enable = true;
+      variable.enable = true;
+    };
+
     home.packages = with pkgs; [
       bluetui
       ironbar
@@ -27,7 +36,6 @@
 
     services = {
       swaync.enable = true;
-      polkit-gnome.enable = true;
     };
   };
 }

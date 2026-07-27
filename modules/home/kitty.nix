@@ -1,6 +1,6 @@
 { config, lib, ... }:
 
-lib.mkIf config.machine.profiles.desktop {
+lib.mkIf config.machine.modules.kitty.enable {
   # Kitty 配置，Inspired by end-4
   programs.kitty = {
     enable = true;

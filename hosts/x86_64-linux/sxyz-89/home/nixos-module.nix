@@ -1,4 +1,4 @@
-{ lib, myLib, ... }:
+{ lib, myLib, ... }@inputs:
 let
   users = myLib.listSubDir ./.;
 in
@@ -7,5 +7,12 @@ in
     ./${username}/nixos-module
   ]) users;
 
-  home-manager.users = lib.genAttrs users (username: ./${username});
+  home-manager = {
+    useGlobalPkgs = true;
+    useUserPackages = true;
+    extraSpecialArgs = {
+      inherit inputs;
+    };
+    users = lib.genAttrs users (username: ./${username});
+  };
 }
