@@ -8,6 +8,7 @@ extend-exclude = ["flake.lock", "*.lock", ".direnv"]
 dae = "dae"
 daed = "daed"
 Sur = "Sur"
+lazer = "lazer"
 
 [default.extend-identifiers]
 W1ngD1nGa5ter = "W1ngD1nGa5ter"

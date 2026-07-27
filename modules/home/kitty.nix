@@ -14,10 +14,12 @@ lib.mkIf config.machine.profiles.desktop {
 
       # 光标
       cursor_shape = "beam";
-      cursor_trail = 1;
+      cursor_trail = 5;
 
-      # 窗口边距（与 foot 保持一致）
-      window_margin_width = 21.75;
+      # 窗口边距
+      # window_margin_width = 21.75;
+      # window_margin_width = 10;
+      window_padding_width = 20;
 
       # 关闭确认
       confirm_os_window_close = 0;
@@ -26,6 +28,11 @@ lib.mkIf config.machine.profiles.desktop {
       shell = "fish";
 
       scrollback_pager = "nvim --cmd 'set eventignore=FileType' +'nnoremap q ZQ' +'call nvim_open_term(0, {})' +'set nomodified nolist' +'$' -";
+
+      allow_remote_control = true;
+      draw_minimal_borders = true;
+      enable_audio_bell = false;
+      update_check_interval = 0;
     };
 
     # 键盘快捷键

@@ -4,6 +4,9 @@ let
     inherit (prev) callPackage;
     directory = ../pkgs;
   };
-  fontPackages = allPackages.fonts or { };
 in
-allPackages // fontPackages
+allPackages
+// {
+  inherit (allPackages.fonts) lxgw-neozhisong lxgw-zhenkai zhuque-fangsong;
+  inherit (allPackages.agent) miyu;
+}

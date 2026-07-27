@@ -20,7 +20,10 @@
 
     programs = {
       hyprland.enable = true;
-      niri.enable = true;
+      niri = {
+        enable = true;
+        package = pkgs.niri-unstable;
+      };
 
       firefox.enable = true;
 

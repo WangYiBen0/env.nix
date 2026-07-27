@@ -24,6 +24,10 @@
 
     zellij = {
       enable = true;
+      settings = {
+        ui.pane_frames.rounded_corners = true;
+        show_startup_tips = false;
+      };
     };
 
     zoxide = {
