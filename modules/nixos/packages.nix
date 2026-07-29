@@ -34,9 +34,6 @@
     xdg-utils
     tealdeer
     lazygit
-    stylua
-    tree-sitter
-    clang-tools
     lftp
     clock-rs
     trashy
@@ -50,8 +47,13 @@
     # develop
     gcc
     clang
+    clang-tools
+    stylua
+    tree-sitter
     cargo
     rustc
+    rustfmt
+    python3
     texliveFull
     graalvmPackages.graalvm-oracle
 

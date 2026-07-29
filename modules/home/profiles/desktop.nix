@@ -24,13 +24,18 @@
       miyu
       nemo-with-extensions
       osu-lazer-bin
-      opencode
     ];
 
     programs = {
       zen-browser = {
         enable = true;
         setAsDefaultBrowser = true;
+      };
+      opencode = {
+        enable = true;
+      };
+      pi-coding-agent = {
+        enable = true;
       };
     };
 
