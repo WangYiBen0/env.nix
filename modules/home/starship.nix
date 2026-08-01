@@ -9,7 +9,7 @@
 
         # 主格式布局
         format = ''
-          $shlvl $cmd_duration 󰜥 $directory $git_branch $nix_shell $python
+          $shlvl $cmd_duration 󰜥 $directory$git_branch$nix_shell$python
           $character'';
 
         character = {
@@ -24,7 +24,7 @@
           symbol = "󰘬";
           truncation_length = 12;
           truncation_symbol = "";
-          format = "󰜥 [](bold fg:cyan)[$symbol $branch(:$remote_branch)](fg:black bg:cyan)[](bold fg:cyan)";
+          format = " 󰜥 [](bold fg:cyan)[$symbol $branch(:$remote_branch)](fg:black bg:cyan)[](bold fg:cyan)";
         };
 
         git_commit = {
@@ -76,7 +76,7 @@
           disabled = false;
           symbol = "󰌠 ";
           style = "bold bg:lavender fg:black";
-          format = "󰜥 [](bold fg:lavender)[$symbol$version](bold bg:lavender fg:black)[](bold fg:lavender)";
+          format = " 󰜥 [](bold fg:lavender)[$symbol$version](bold bg:lavender fg:black)[](bold fg:lavender)";
           # python_binary = [
           #   "uv"
           #   "run"
@@ -121,7 +121,7 @@
         nix_shell = {
           disabled = false;
           symbol = "󱄅 ";
-          format = "󰜥 [](bold fg:peach)[$symbol$state](bold bg:peach fg:black)[](bold fg:peach)";
+          format = " 󰜥 [](bold fg:peach)[$symbol$state](bold bg:peach fg:black)[](bold fg:peach)";
         };
 
         shlvl = {

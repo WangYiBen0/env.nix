@@ -43,6 +43,7 @@
 
     # im
     qq
+    telegram-desktop
 
     # develop
     gcc

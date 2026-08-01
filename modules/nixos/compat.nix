@@ -26,6 +26,7 @@
         ++ (with pkgs; [
           stdenv.cc.cc
 
+          faudio
           fna3d
           fuse
           gtk2
