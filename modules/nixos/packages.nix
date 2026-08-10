@@ -3,17 +3,19 @@
   environment.systemPackages = with pkgs; [
     # basic
     git
+    git-lfs
     curl
     wget
+    aria2
     neovim
     zsh
+    zimfw
     fish
     kitty
-    zimfw
     starship
     file
     zip
-    unzip
+    unzipNLS
     rar
     unrar
     _7zz
@@ -21,6 +23,16 @@
     # utils
     fastfetch
     btop
+    procs
+    httpie
+    curlie
+    doggo
+    ipcalc
+    iperf3
+    tcpdump
+    gping
+    dust
+    duf
     brightnessctl
     yazi
     ripgrep
@@ -28,8 +40,11 @@
     fzf
     fd
     eza
+    jq
+    yq-go
+    jc
+    sad
     wl-clipboard
-    xclip
     wayland-utils
     xdg-utils
     tealdeer
@@ -40,10 +55,7 @@
     wiremix
     obs-studio
     chafa
-
-    # im
-    qq
-    telegram-desktop
+    hyperfine
 
     # develop
     gcc

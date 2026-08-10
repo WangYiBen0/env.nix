@@ -9,7 +9,7 @@
 
         # 主格式布局
         format = ''
-          $shlvl $cmd_duration 󰜥 $directory$git_branch$nix_shell$python
+          $shlvl $username $cmd_duration 󰜥 $directory$git_branch$nix_shell$python
           $character'';
 
         character = {
@@ -70,6 +70,14 @@
           disabled = true;
           format = "🕙[[ $time ]]($style) ";
           time_format = "%T";
+        };
+
+        rust = {
+          disabled = false;
+          symbol = "󱘗 ";
+          style = "bold bg:red fg:black";
+          format = " 󰜥 [](bold fg:red)[$symbol$version]($style)[](bold fg:red)";
+          version_format = "v$raw";
         };
 
         python = {

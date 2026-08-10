@@ -42,13 +42,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    daeuniverse-nixpkgs = {
-      url = "github:NixOS/nixpkgs/b12141ef619e0a9c1c84dc8c684040326f27cdcc";
-    };
-
     daeuniverse = {
-      url = "github:daeuniverse/flake.nix/pull/224/merge";
-      inputs.nixpkgs.follows = "daeuniverse-nixpkgs";
+      # url = "github:daeuniverse/flake.nix";
+      url = "github:WangYiBen0/dae.nix"; # my own github:daeuniverse/flake.nix fork
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-parts.follows = "flake-parts";
+      };
     };
 
     disko = {
@@ -61,11 +61,17 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    niri = {
-      url = "github:sodiboo/niri-flake";
+    hyprland = {
+      url = "github:hyprwm/Hyprland";
       inputs = {
         nixpkgs.follows = "nixpkgs";
+        pre-commit-hooks.follows = "git-hooks";
       };
+    };
+
+    niri = {
+      url = "github:sodiboo/niri-flake/pull/1850/merge";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     nix-gaming = {
@@ -101,6 +107,11 @@
 
     preservation = {
       url = "github:nix-community/preservation";
+    };
+
+    spotx = {
+      url = "github:SpotX-Official/SpotX-Nix";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     zen-browser = {

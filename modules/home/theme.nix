@@ -51,8 +51,16 @@ lib.mkIf config.machine.modules.theme.enable {
       package = pkgs.whitesur-icon-theme;
     };
 
+    gtk3 = {
+      extraConfig = {
+        gtk-file-chooser-backend = "nemo";
+      };
+    };
     gtk4 = {
       theme = config.gtk.theme;
+      extraConfig = {
+        gtk-file-chooser-backend = "nemo";
+      };
     };
   };
 

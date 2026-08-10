@@ -1,10 +1,4 @@
-{ pkgs, ... }:
 {
-  home.packages = with pkgs; [
-    procs
-    httpie
-  ];
-
   programs = {
     btop.enable = true;
     cava.enable = true;

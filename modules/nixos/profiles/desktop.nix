@@ -24,12 +24,14 @@
     # };
 
     programs = {
-      hyprland.enable = true;
+      hyprland = {
+        enable = true;
+        package = pkgs.hyprland;
+      };
       niri = {
         enable = true;
         package = pkgs.niri-unstable;
       };
-
       firefox.enable = true;
 
       steam = {
@@ -49,6 +51,9 @@
 
     environment = {
       systemPackages = with pkgs; [
+        qq
+        telegram-desktop
+
         noctalia-shell
         fuzzel
         swaylock
@@ -60,6 +65,8 @@
         inkscape
         hmcl
         olympus
+
+        chromium
       ];
 
       variables = {

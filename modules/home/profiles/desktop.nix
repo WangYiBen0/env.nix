@@ -24,6 +24,7 @@
       miyu
       nemo-with-extensions
       osu-lazer-bin
+      spotify-spotx
     ];
 
     programs = {
