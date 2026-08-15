@@ -1,5 +1,6 @@
 _: {
   imports = [
+    ./users
     ./bootloader.nix
     ./disko.nix
     ./hardware.nix

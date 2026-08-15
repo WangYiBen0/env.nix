@@ -6,14 +6,14 @@
 
   disko.devices = {
     disk = {
-      nvme0n1 = {
+      sda = {
         type = "disk";
         device = "/dev/sda";
         content = {
           type = "gpt";
           partitions = {
             ESP = {
-              type = "EF00"; # ESP 类型
+              type = "EF00";
               size = "500M";
               content = {
                 type = "filesystem";
@@ -27,7 +27,7 @@
             };
 
             XBOOTLDR = {
-              type = "EA00"; # XBOOTLDR 类型
+              type = "EA00";
               size = "8G";
               content = {
                 type = "filesystem";
@@ -41,7 +41,7 @@
             };
 
             LinuxSystemPartition = {
-              type = "0FC63DAF-8483-4772-8E79-3D69D8477DE4"; # Linux 文件系统
+              type = "0FC63DAF-8483-4772-8E79-3D69D8477DE4";
               size = "100%";
               content = {
                 type = "btrfs";

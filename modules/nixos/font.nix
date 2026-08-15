@@ -17,7 +17,7 @@
         noto-fonts-cjk-serif
         noto-fonts-color-emoji
         maple-mono.NF-CN
-        jetbrains-mono
+        # jetbrains-mono
         nerd-fonts.symbols-only
         nerd-fonts.liberation
         liberation_ttf

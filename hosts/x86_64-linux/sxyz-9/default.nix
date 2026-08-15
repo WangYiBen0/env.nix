@@ -1,7 +1,9 @@
 _: {
   imports = [
     ./bootloader.nix
-    ./hardware-configuration.nix
+    ./disko.nix
+    ./hardware.nix
+    ./users
     ./home.nix
   ];
 

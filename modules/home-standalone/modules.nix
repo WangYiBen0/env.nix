@@ -1,7 +1,7 @@
 { inputs, ... }: {
   imports = with inputs; [
-    niri.homeModules.niri
-    hyprland.homeModules.default
+    # niri.homeModules.niri
+    hyprland.homeManagerModules.default
 
     ../home
   ];
