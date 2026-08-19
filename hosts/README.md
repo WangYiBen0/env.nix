@@ -2,11 +2,11 @@
 
 ## Managed Machines
 
-| Host          | Machine Type | Profile | NixOS Version | Description        |
-| ------------- | ------------ | ------- | ------------- | ------------------ |
-| `matebook16d` | MateBook 16D | desktop | 26.11         | Primary laptop     |
-| `sxyz-89`     | School PC    | desktop | 26.05         | School workstation |
-| `sxyz-9`      | School PC    | desktop | 26.05         | School workstation |
+| Host          | Machine Type | Profile | NixOS Version         | State Version | With Home Manager | Description        |
+| ------------- | ------------ | ------- | --------------------- | ------------- | ----------------- | ------------------ |
+| `matebook16d` | MateBook 16D | desktop | unstable(26.11 Zokor) | 26.05         | true              | Primary laptop     |
+| `sxyz-89`     | School PC    | desktop | unstable(26.11 Zokor) | 26.05         | true              | School workstation |
+| `sxyz-79`     | School PC    | desktop | unstable(26.11 Zokor) | 26.05         | true              | School workstation |
 
 ## Directory Structure
 
@@ -34,7 +34,7 @@ hosts/
     │   │       └── state-version.nix
     │   └── persistent/          # Preservation paths
     ├── sxyz-89/                 # (same structure as matebook16d)
-    └── sxyz-9/
+    └── sxyz-79/
 ```
 
 ## Host Auto-Discovery

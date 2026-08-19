@@ -11,6 +11,7 @@
 
     fd.enable = true;
     fzf.enable = true;
+    gh.enable = true;
     jq.enable = true;
     nh.enable = true;
 

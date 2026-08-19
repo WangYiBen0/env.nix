@@ -69,6 +69,7 @@
     python3
     texliveFull
     graalvmPackages.graalvm-oracle
+    glab
 
     # nix
     comma

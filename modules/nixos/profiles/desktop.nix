@@ -47,6 +47,10 @@
         };
       };
 
+      vscode = {
+        enable = true;
+      };
+
       gamescope = {
         enable = true;
       };
