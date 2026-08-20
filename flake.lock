@@ -140,11 +140,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1787146363,
-        "narHash": "sha256-8pLhsL7HS6ceAz8Zzgi51nBIOF8CzNc+VYmsGU22ATA=",
+        "lastModified": 1787242617,
+        "narHash": "sha256-psacJXxzbEL7uBCYbdJF7Hpx39EE11G7/8/S8KO2kT4=",
         "owner": "WangYiBen0",
         "repo": "dae.nix",
-        "rev": "ed2c682f92d839e06fd3a3c1ed86fe1d27ddbb8d",
+        "rev": "f2fef5e6ff625c2633dbbdccab265ae123a6d484",
         "type": "github"
       },
       "original": {
