@@ -14,6 +14,7 @@
         "https://mirrors.ustc.edu.cn/nix-channels/store"
         "https://mirrors.cernet.edu.cn/nix-channels/store"
         "https://cache.nixos.org"
+        "https://w1ngd1nga5ter.cachix.org" # my cachix
         "https://nix-community.cachix.org"
         "https://cache.numtide.com"
         "https://catppuccin.cachix.org"
@@ -24,6 +25,7 @@
 
       trusted-public-keys = [
         "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+        "w1ngd1nga5ter.cachix.org-1:IlTkUIk8A+m48BBp9v1Swt4CuL2Mab/LyMeiwrEXSZs=" # my cachix
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
         "nixpkgs-python.cachix.org-1:hxjI7pFxTyuTHn2NkvWCrAUcNZLNS3ZAvfYNuYifcEU="
         "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="

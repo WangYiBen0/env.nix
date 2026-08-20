@@ -18,6 +18,7 @@ forAllSystems (
         statix
         typos
         prettier
+        nix-update
       ];
       inherit (self.checks.${system}.pre-commit) shellHook;
     };

@@ -98,7 +98,7 @@
           style = "bg:green fg:black";
           truncation_length = 8;
           truncation_symbol = " ••/";
-          format = "[](bold fg:green)[󰉋 ➜ $path]($style)[](bold fg:green)";
+          format = "[](bold fg:green)[󰉋 ➜$path]($style)[](bold fg:green)";
           substitutions = {
             "Desktop" = "  ";
             "Documents" = "  ";
