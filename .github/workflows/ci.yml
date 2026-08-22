@@ -11,6 +11,7 @@ concurrency:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   checks:
@@ -29,6 +30,8 @@ jobs:
 
       - name: Enable Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@v14
+        with:
+          use-flakehub: "enabled"
 
       - name: Set up Cachix
         uses: cachix/cachix-action@v17
@@ -63,6 +66,8 @@ jobs:
 
       - name: Enable Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@v14
+        with:
+          use-flakehub: "enabled"
 
       - name: Set up Cachix
         uses: cachix/cachix-action@v17
@@ -70,6 +75,10 @@ jobs:
           name: w1ngd1nga5ter
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community,catppuccin,niri,nixpkgs-python
+
+      - name: Fetch base commit for diff
+        if: github.event.before != '0000000000000000000000000000000000000000'
+        run: git fetch --no-tags --depth=1 origin "${{ github.event.before }}"
 
       - name: Build changed packages and push to Cachix
         run: |
@@ -86,9 +95,14 @@ jobs:
           build_list=()
 
           # If shared/global inputs changed, rebuild everything.
+          # (The `*` glob in installables is unsupported here, so enumerate
+          #  package attribute names explicitly.)
           if echo "$changed" | grep -qE '^(flake\.nix|flake\.lock|outputs/|overlays/|lib/|modules/)'; then
             echo "==> Global inputs changed, building all packages"
-            build_list+=(".#packages.x86_64-linux.*")
+            mapfile -t all_pkgs < <(nix eval .#packages.x86_64-linux --apply builtins.attrNames --json | sed -e 's/\[//' -e 's/\]//' -e 's/,/\n/g' -e 's/"//g' -e 's/ //g')
+            for p in "${all_pkgs[@]}"; do
+              build_list+=(".#packages.x86_64-linux.$p")
+            done
           else
             for d in $(find pkgs -name package.nix -exec dirname {} \;); do
               if echo "$changed" | grep -qE "^${d}/"; then

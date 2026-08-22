@@ -41,4 +41,9 @@ in
   lib = myLib;
   overlays.default = import ../overlays inputs;
   inherit (hosts) nixosConfigurations homeConfigurations;
+
+  flakehub = {
+    version = "0.1.0";
+    description = "W1ngD1nGa5ter's AIO environment configuration, including NixOS & Home Manager";
+  };
 }

@@ -1,0 +1,27 @@
+name: "Publish to FlakeHub"
+
+on:
+  push:
+    branches:
+      - "main"
+
+permissions:
+  id-token: "write"
+  contents: "read"
+
+jobs:
+  flakehub-publish:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "actions/checkout@v7"
+        with:
+          persist-credentials: false
+
+      - uses: "DeterminateSystems/determinate-nix-action@v3"
+
+      - uses: "DeterminateSystems/flakehub-push@main"
+        with:
+          name: "W1ngD1nGa5ter/env.nix"
+          rolling: true
+          visibility: "unlisted"
+          include-output-paths: true
