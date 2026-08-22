@@ -1,15 +1,8 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
-}:
+{ config, lib, ... }:
 
 lib.mkIf config.machine.modules.niri.enable {
   wayland.windowManager.niri = {
     enable = true;
-    package = pkgs.niri-unstable;
-    xwaylandSatellitePackage = pkgs.xwayland-satellite-unstable;
     settings = {
       # Input configuration
       input = {

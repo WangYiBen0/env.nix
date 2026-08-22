@@ -1,1 +1,1 @@
-inputs: inputs.niri.overlays.niri
+inputs: inputs.niri.overlays.default

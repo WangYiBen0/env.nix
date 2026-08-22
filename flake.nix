@@ -70,7 +70,7 @@
     };
 
     niri = {
-      url = "github:epireyn/niri-flake";
+      url = "github:niri-wm/niri";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -112,6 +112,14 @@
     spotx = {
       url = "github:SpotX-Official/SpotX-Nix";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    xwayland-satellite = {
+      url = "github:Supreeeme/xwayland-satellite";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        rust-overlay.follows = "";
+      };
     };
 
     zen-browser = {

@@ -21,39 +21,19 @@
       desktopManager.plasma6.enable = true;
     };
 
-    # xdg.portal = {
-    #   enable = true;
-    #   extraPortals = [ pkgs.xdg-desktop-portal-gnome ];
-    # };
-
     programs = {
-      hyprland = {
-        enable = true;
-        package = pkgs.hyprland;
-      };
-      niri = {
-        enable = true;
-        package = pkgs.niri-unstable;
-      };
       firefox.enable = true;
+      hyprland.enable = true;
+      niri.enable = true;
 
       steam = {
         enable = true;
-        protontricks = {
-          enable = true;
-        };
-        extest = {
-          enable = true;
-        };
+        protontricks.enable = true;
+        extest.enable = true;
       };
 
-      vscode = {
-        enable = true;
-      };
-
-      gamescope = {
-        enable = true;
-      };
+      vscode.enable = true;
+      gamescope.enable = true;
     };
 
     environment = {
@@ -64,7 +44,6 @@
         noctalia-shell
         fuzzel
         swaylock
-        xwayland-satellite
         kdePackages.plasma-browser-integration
         kdePackages.partitionmanager
         gnome-tweaks

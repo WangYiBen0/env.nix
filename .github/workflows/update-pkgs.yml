@@ -2,8 +2,8 @@ name: Update pkgs
 
 on:
   schedule:
-    # Daily, 12:00 UTC
-    - cron: "0 12 * * *"
+    # Daily, 00:00 UTC
+    - cron: "0 0 * * *"
   workflow_dispatch:
 
 permissions:
@@ -19,10 +19,10 @@ jobs:
     timeout-minutes: 180
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v17
+        uses: DeterminateSystems/nix-installer-action@v22
         with:
           extra-conf: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
@@ -74,22 +74,6 @@ jobs:
             git diff --stat
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Check
-        if: steps.changes.outputs.changed == 'true'
-        run: nix flake check
-
-      - name: Build packages
-        if: steps.changes.outputs.changed == 'true'
-        run: |
-          mapfile -t packages < <(find pkgs -name package.nix -exec dirname {} \; | xargs -n1 basename | sort -u)
-          nix build --no-link "${packages[@]/#/.#}"
-
-      - name: Cachix push
-        if: steps.changes.outputs.changed == 'true'
-        run: |
-          mapfile -t packages < <(find pkgs -name package.nix -exec dirname {} \; | xargs -n1 basename | sort -u)
-          nix path-info "${packages[@]/#/.#}" | cachix push w1ngd1nga5ter
 
       - name: Commit and push
         if: steps.changes.outputs.changed == 'true'
