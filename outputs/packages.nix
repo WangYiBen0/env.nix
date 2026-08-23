@@ -16,7 +16,20 @@ forAllSystems (
   in
   {
     inherit (allPackages.fonts) lxgw-neozhisong lxgw-zhenkai zhuque-fangsong;
-    inherit (allPackages.agent) miyu;
-    inherit (pkgsFor system) hyprland niri xwayland-satellite;
+    inherit (allPackages.agent) miyu deepseek-harness dsh-tui;
+    inherit (pkgsFor system)
+      aquamarine
+      hyprland
+      hyprlang
+      hyprcursor
+      hyprgraphics
+      hyprland-protocols
+      hyprutils
+      hyprwayland-scanner
+      hyprwire
+      udis86-hyprland
+      niri
+      xwayland-satellite
+      ;
   }
 )

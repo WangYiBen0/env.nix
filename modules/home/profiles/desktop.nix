@@ -22,6 +22,8 @@
       ironbar
       libreoffice-qt6-fresh
       miyu
+      deepseek-harness
+      dsh-tui
       nemo-with-extensions
       osu-lazer-bin
       spotify-spotx

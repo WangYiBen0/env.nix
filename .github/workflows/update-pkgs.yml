@@ -53,7 +53,7 @@ jobs:
             mapfile -t packages < <(find pkgs -name package.nix -exec dirname {} \; | xargs -n1 basename | sort -u)
             for pkg in "${packages[@]}"; do
               echo "==> Updating $pkg"
-              if ! nix-update --flake "$pkg"; then
+              if ! nix-update --flake "$pkg" --use-update-script; then
                 echo "No update available for $pkg, skipping"
               fi
             done
