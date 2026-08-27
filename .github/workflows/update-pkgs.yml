@@ -79,6 +79,7 @@ jobs:
           fi
 
       - name: Commit and push
+        id: push
         if: steps.changes.outputs.changed == 'true'
         run: |
           git checkout -B main
@@ -94,3 +95,12 @@ jobs:
           git commit -m "$msg"
           git pull --rebase origin main
           git push origin main
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+      # Commits pushed with GITHUB_TOKEN do not trigger other workflows,
+      # so the CI cache job has to be dispatched explicitly.
+      - name: Trigger CI cache
+        if: steps.push.outputs.pushed == 'true'
+        run: gh workflow run ci.yml --ref main
+        env:
+          GH_TOKEN: ${{ github.token }}
