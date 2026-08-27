@@ -28,6 +28,7 @@ forAllSystems (
       hyprwayland-scanner
       hyprwire
       udis86-hyprland
+      xdg-desktop-portal-hyprland
       niri
       xwayland-satellite
       ;
