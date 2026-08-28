@@ -62,6 +62,13 @@ buildNpmPackage (finalAttrs: {
       find "$nodePtyPrebuilds" -mindepth 1 -maxdepth 1 -type d \
         \( -name 'darwin-*' -o -name 'win32-*' \) -exec rm -rf {} +
     fi
+
+    # dsh-terminal-bash hardcodes /bin/bash as the default shell; on NixOS that
+    # path does not exist. Rewrite the fallback so any preset or profile that
+    # does not set an explicit shellPath still resolves a usable bash.
+    find "$out/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/dsh-terminal-bash" \
+      -path "*/lib/index.js" -exec \
+      sed -i 's#const DEFAULT_BASH_SHELL = "/bin/bash";#const DEFAULT_BASH_SHELL = "${lib.getExe bash}";#' {} +
   '';
 
   npmDepsFetcherVersion = 2;
