@@ -5,8 +5,16 @@
   makeWrapper,
   nodejs,
   pnpm,
+  bash,
 }:
 
+let
+  runtimePath = lib.makeBinPath [
+    bash
+    nodejs
+    pnpm
+  ];
+in
 buildNpmPackage (finalAttrs: {
   pname = "deepseek-harness";
   version = "0.1.1-rc.2";
@@ -15,6 +23,10 @@ buildNpmPackage (finalAttrs: {
     url = "https://registry.npmjs.org/@deepseek-ai/dsh/-/dsh-${finalAttrs.version}.tgz";
     hash = "sha256-lmml3QdvbjNCPbY7NBEjQt86lRJiTn5I2fy7CwL6PdY=";
   };
+
+  # NixOS does not provide the terminal backend's default /bin/bash. Point the
+  # PTY shell at the Nix-provided bash so the Bash tool can spawn a shell.
+  patches = [ ./use-nix-bash.patch ];
 
   postPatch = ''
     cp ${./package-lock.json} package-lock.json
@@ -27,6 +39,8 @@ buildNpmPackage (finalAttrs: {
         fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
       "
     fi
+    substituteInPlace config/agent-presets/minimal/agent.cordis.yml \
+      --replace-fail "@bash@" "${lib.getExe bash}"
   '';
 
   dontNpmBuild = true;
@@ -38,11 +52,16 @@ buildNpmPackage (finalAttrs: {
     makeWrapper ${nodejs}/bin/node $out/bin/dsh \
       --add-flags "--expose-internals" \
       --add-flags "$out/lib/node_modules/@deepseek-ai/dsh/lib/bin.js" \
-      --suffix PATH : ${lib.makeBinPath [ pnpm ]} \
+      --prefix PATH : ${runtimePath} \
       --suffix PATH : $out/bin
-    for f in $out/lib/node_modules/@deepseek-ai/dsh/node_modules/node-pty/prebuilds/*/spawn-helper; do
-      [ -f "$f" ] && chmod +x "$f"
-    done
+
+    # Drop node-pty prebuilds for foreign platforms so the PTY backend only
+    # resolves the native addon for the host OS.
+    nodePtyPrebuilds="$out/lib/node_modules/@deepseek-ai/dsh/node_modules/node-pty/prebuilds"
+    if [ -d "$nodePtyPrebuilds" ]; then
+      find "$nodePtyPrebuilds" -mindepth 1 -maxdepth 1 -type d \
+        \( -name 'darwin-*' -o -name 'win32-*' \) -exec rm -rf {} +
+    fi
   '';
 
   npmDepsFetcherVersion = 2;
@@ -60,5 +79,6 @@ buildNpmPackage (finalAttrs: {
     homepage = "https://github.com/deepseek-ai/deepseek-harness";
     license = licenses.mit;
     mainProgram = "dsh";
+    platforms = platforms.linux;
   };
 })

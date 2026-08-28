@@ -41,7 +41,12 @@ buildNpmPackage (finalAttrs: {
     rm $out/bin/dsh-tui
     makeWrapper ${nodejs}/bin/node $out/bin/dsh-tui \
       --add-flags "$out/lib/node_modules/@deepseek-harness-tui/dsh-tui/bin/dsh-tui.js" \
-      --suffix PATH : ${lib.makeBinPath [ pnpm ]}
+      --prefix PATH : ${
+        lib.makeBinPath [
+          nodejs
+          pnpm
+        ]
+      }
   '';
 
   npmDepsFetcherVersion = 2;
@@ -54,5 +59,6 @@ buildNpmPackage (finalAttrs: {
     homepage = "https://github.com/ccch1mneyyy/dsh-TUI";
     license = licenses.mit;
     mainProgram = "dsh-tui";
+    platforms = platforms.linux;
   };
 })

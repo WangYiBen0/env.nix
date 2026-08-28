@@ -1,0 +1,11 @@
+--- a/config/agent-presets/minimal/agent.cordis.yml
++++ b/config/agent-presets/minimal/agent.cordis.yml
+@@ -30,6 +30,7 @@
+     - id: terminal-bash
+       name: '@deepseek-ai/dsh-terminal-bash'
+       disabled: !!js process.platform === 'win32'
+       config:
++        shellPath: @bash@
+         timeoutMs: 300000
+ 
+     - id: persistent-bash
