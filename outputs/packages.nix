@@ -17,6 +17,7 @@ forAllSystems (
   {
     inherit (allPackages.fonts) lxgw-neozhisong lxgw-zhenkai zhuque-fangsong;
     inherit (allPackages.agent) miyu deepseek-harness dsh-tui;
+    inherit (allPackages.yazi-plugins) yaziline;
     inherit (pkgsFor system)
       aquamarine
       hyprland

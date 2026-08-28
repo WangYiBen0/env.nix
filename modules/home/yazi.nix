@@ -48,6 +48,7 @@
         {
           on = "M";
           run = "plugin mount";
+          desc = "open mount menu";
         }
 
         # sudo.yazi
@@ -69,7 +70,7 @@
             "P"
           ];
           run = "plugin sudo -- paste --force";
-          desc = "sudo paste";
+          desc = "sudo paste forcefully";
         }
         # # sudo mv
         {
@@ -153,13 +154,11 @@
       plugin.prepend_fetchers = [
         # git.yazi
         {
-          id = "git"; # Remove if Yazi > v26.1.22
           url = "*";
           run = "git";
           group = "git";
         }
         {
-          id = "git"; # Remove if Yazi > v26.1.22
           url = "*/";
           run = "git";
           group = "git";
