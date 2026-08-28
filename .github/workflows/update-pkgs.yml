@@ -26,7 +26,7 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@v22
         with:
           extra-conf: |
-            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+            access-tokens = github.com=${{ github.token }}
             experimental-features = nix-command flakes
 
       - name: Enable Magic Nix Cache
@@ -46,7 +46,7 @@ jobs:
 
       - name: Update pkgs packages
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           nix develop --command bash -c '
             set -e

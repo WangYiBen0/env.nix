@@ -100,7 +100,7 @@
     nixvim = {
       url = "github:WangYiBen0/nixvim.nix"; # my own nixvim config, could be used like the official one
       inputs = {
-        flake-parts.follows = "flake-parts";
+        nixvim.inputs.flake-parts.follows = "flake-parts";
         git-hooks-nix.follows = "git-hooks";
       };
     };
