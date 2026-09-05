@@ -377,11 +377,11 @@
         "xdph": "xdph"
       },
       "locked": {
-        "lastModified": 1788560231,
-        "narHash": "sha256-dOozE/csX3RzYkXZ8zZv6w6F0hknDZUc/FazWUNHwpY=",
+        "lastModified": 1788607141,
+        "narHash": "sha256-yjVNYxNkV7KST+K1kW0i4uts2KvZDuK98oot12xHJQ0=",
         "owner": "hyprwm",
         "repo": "Hyprland",
-        "rev": "ee0409623e2d6a683374b39a32e0ac3d087841aa",
+        "rev": "2eb5180c6f258bb73c4b9b71a1361dede0e1453e",
         "type": "github"
       },
       "original": {
@@ -942,11 +942,11 @@
         "spotx-bash": "spotx-bash"
       },
       "locked": {
-        "lastModified": 1788538977,
-        "narHash": "sha256-QFs0xFtNpGEOhCTGmvM9UlNYhU/nAjLQz9l/tVf0Aps=",
+        "lastModified": 1788604629,
+        "narHash": "sha256-JBkUXMp3RiKKsQzBi9JH1SPsYEMU7vX3+G+Is3iTVnk=",
         "owner": "SpotX-Official",
         "repo": "SpotX-Nix",
-        "rev": "e9d738c5df3d47290090c891fa9828984c99c95e",
+        "rev": "ae34d14c7206fc0013a50ae2141ad7456ebb92af",
         "type": "github"
       },
       "original": {
