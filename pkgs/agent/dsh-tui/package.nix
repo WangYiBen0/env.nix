@@ -50,7 +50,7 @@ buildNpmPackage (finalAttrs: {
   '';
 
   npmDepsFetcherVersion = 2;
-  npmDepsHash = "sha256-lyrcjIXpfDYXvqD1VXwS7bWpwR6Lt91qw3GAf4m2+dM=";
+  npmDepsHash = "sha256-YOLZNZE42pz2+g7Y1SclAJHjZ2SMTNk4dAoOeEF21Ho=";
 
   passthru.updateScript = ./update.sh;
 
