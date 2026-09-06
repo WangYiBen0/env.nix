@@ -43,6 +43,8 @@ jobs:
 
       - name: Check
         # Only the host system; building other systems is wasted on this runner.
+        env:
+          NIXPKGS_ALLOW_UNFREE: "1"
         run: nix flake check
 
   cache:
@@ -82,6 +84,8 @@ jobs:
         run: git fetch --no-tags --depth=1 origin "${{ github.event.before }}"
 
       - name: Build changed packages and push to Cachix
+        env:
+          NIXPKGS_ALLOW_UNFREE: "1"
         run: |
           set -euo pipefail
 

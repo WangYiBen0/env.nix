@@ -43,11 +43,14 @@ jobs:
           extraPullNames: nix-community,catppuccin,niri,nixpkgs-python
 
       - name: Update flake inputs
+        env:
+          NIXPKGS_ALLOW_UNFREE: "1"
         run: nix flake update
 
       - name: Update pkgs packages
         env:
           GH_TOKEN: ${{ github.token }}
+          NIXPKGS_ALLOW_UNFREE: "1"
         run: |
           nix develop --command bash -c '
             set -e

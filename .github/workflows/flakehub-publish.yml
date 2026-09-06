@@ -20,6 +20,8 @@ jobs:
       - uses: "DeterminateSystems/determinate-nix-action@v3"
 
       - uses: "DeterminateSystems/flakehub-push@main"
+        env:
+          NIXPKGS_ALLOW_UNFREE: "1"
         with:
           name: "W1ngD1nGa5ter/env.nix"
           rolling: true

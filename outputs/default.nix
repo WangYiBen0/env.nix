@@ -13,6 +13,7 @@ let
     system:
     import nixpkgs {
       inherit system;
+      config.allowUnfree = true;
       overlays = [ (import ../overlays inputs) ];
     };
 
