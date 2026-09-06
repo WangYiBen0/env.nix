@@ -24,10 +24,6 @@ buildNpmPackage (finalAttrs: {
     hash = "sha256-zRsXebroswOqaAdTYyrZhT4H8gTaF8WlVwefCJSs4Z8=";
   };
 
-  # NixOS does not provide the terminal backend's default /bin/bash. Point the
-  # PTY shell at the Nix-provided bash so the Bash tool can spawn a shell.
-  patches = [ ./use-nix-bash.patch ];
-
   postPatch = ''
     cp ${./package-lock.json} package-lock.json
     chmod u+w package-lock.json
@@ -39,8 +35,6 @@ buildNpmPackage (finalAttrs: {
         fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
       "
     fi
-    substituteInPlace config/agent-presets/minimal/agent.cordis.yml \
-      --replace-fail "@bash@" "${lib.getExe bash}"
   '';
 
   dontNpmBuild = true;
@@ -72,7 +66,7 @@ buildNpmPackage (finalAttrs: {
   '';
 
   npmDepsFetcherVersion = 2;
-  npmDepsHash = "sha256-udSAqQv4P/iQo8SbUgrsfdBA6CdHL63+RJXJrnMmrWU=";
+  npmDepsHash = "sha256-lRrYBrYQ5tfZniozPbAWmjnJLNFzPxIXYgDR8LMY8q0=";
 
   passthru = {
     packageName = "@deepseek-ai/dsh";

@@ -9,5 +9,5 @@ allPackages
 // {
   inherit (allPackages.fonts) lxgw-neozhisong lxgw-zhenkai zhuque-fangsong;
   inherit (allPackages.agent) miyu deepseek-harness dsh-tui;
-  inherit (allPackages.applications) dingtalk;
+  inherit (allPackages.applications) dingtalk cele-mod;
 }
