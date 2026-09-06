@@ -17,11 +17,11 @@ let
 in
 buildNpmPackage (finalAttrs: {
   pname = "deepseek-harness";
-  version = "0.1.1-rc.2";
+  version = "0.1.2-rc.1";
 
   src = fetchzip {
     url = "https://registry.npmjs.org/@deepseek-ai/dsh/-/dsh-${finalAttrs.version}.tgz";
-    hash = "sha256-lmml3QdvbjNCPbY7NBEjQt86lRJiTn5I2fy7CwL6PdY=";
+    hash = "sha256-zRsXebroswOqaAdTYyrZhT4H8gTaF8WlVwefCJSs4Z8=";
   };
 
   # NixOS does not provide the terminal backend's default /bin/bash. Point the
@@ -72,7 +72,7 @@ buildNpmPackage (finalAttrs: {
   '';
 
   npmDepsFetcherVersion = 2;
-  npmDepsHash = "sha256-biS8nDzUUYhIl6mH52UmgTSg9QcLFPwLc/B3dk5clh4=";
+  npmDepsHash = "sha256-udSAqQv4P/iQo8SbUgrsfdBA6CdHL63+RJXJrnMmrWU=";
 
   passthru = {
     packageName = "@deepseek-ai/dsh";

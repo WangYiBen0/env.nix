@@ -34,12 +34,7 @@
         enable = true;
         setAsDefaultBrowser = true;
       };
-      opencode = {
-        enable = true;
-      };
-      pi-coding-agent = {
-        enable = true;
-      };
+      opencode.enable = true;
     };
 
     services = {

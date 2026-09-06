@@ -47,6 +47,7 @@
     wl-clipboard
     wayland-utils
     xdg-utils
+    desktop-file-utils
     tealdeer
     lazygit
     lftp
@@ -78,6 +79,9 @@
     nix-index
     nix-inspect
     manix
+
+    # apps
+    dingtalk
   ];
 
   environment.variables = {
