@@ -20,7 +20,7 @@
     home.packages = with pkgs; [
       bluetui
       ironbar
-      libreoffice-qt6
+      libreoffice-qt
       miyu
       deepseek-harness
       dsh-tui

@@ -65,7 +65,6 @@ stdenv.mkDerivation {
   '';
 
   meta = {
-    maintainers = with lib.maintainers; [ xddxdd ];
     description = "DingTalk screen sharing implementation under Wayland";
     homepage = "https://github.com/lzl200110/dingtalk-wayland-screenshare";
     license = lib.licenses.mit;

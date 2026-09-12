@@ -345,7 +345,6 @@ stdenv.mkDerivation (_finalAttrs: {
   ];
 
   meta = with lib; {
-    maintainers = [ xddxdd ];
     description = "DingTalk (钉钉) - Official enterprise communication platform by Alibaba";
     homepage = "https://www.dingtalk.com/";
     platforms = [
