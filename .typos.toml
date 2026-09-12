@@ -2,7 +2,7 @@
 locale = "en"
 
 [files]
-extend-exclude = ["flake.lock", "*.lock", ".direnv"]
+extend-exclude = ["flake.lock", "*.lock", ".direnv", "update.sh"]
 
 [default.extend-words]
 dae = "dae"

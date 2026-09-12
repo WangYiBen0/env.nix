@@ -331,7 +331,10 @@ stdenv.mkDerivation (_finalAttrs: {
     execstack -c $out/lib/libconference_new.so
   '';
 
-  passthru = { inherit dingtalk-wayland-screenshare; };
+  passthru = {
+    inherit dingtalk-wayland-screenshare;
+    updateScript = ./update.sh;
+  };
 
   desktopItems = [
     (makeDesktopItem {
