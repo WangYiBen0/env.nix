@@ -6,63 +6,67 @@
   autoPatchelfHook,
   makeWrapper,
   callPackage,
-  qt5,
   makeDesktopItem,
   copyDesktopItems,
   prelink,
   coreutils,
-  # DingTalk dependencies (from jeffguorg/yakkhini NUR)
+  perl,
+  qt5,
+  # Heavy GUI/electron dependencies
   alsa-lib,
   apr,
   aprutil,
   at-spi2-atk,
   at-spi2-core,
+  atk,
   cairo,
   cups,
-  curl,
   dbus,
   e2fsprogs,
+  expat,
   fontconfig,
   freetype,
   fribidi,
   gdk-pixbuf,
   glib,
-  gtkglext,
   gnutls,
-  graphite2,
   gtk3,
+  gtk2,
+  gtkglext,
   harfbuzz,
   icu63,
   krb5,
   libdrm,
   libgcrypt,
+  libGL,
   libGLU,
   libglvnd,
   libidn2,
   libinput,
   libjpeg,
+  libopus,
   libpng,
   libpsl,
   libpulseaudio,
   libssh2,
   libthai,
-  libxcrypt-legacy,
   libxkbcommon,
   mesa,
   mtdev,
-  nghttp2,
   nspr,
   nss,
   openldap,
   pango,
   pcre2,
+  pipewire,
   rtmpdump,
   udev,
-  util-linux,
+  wayland,
+  zlib,
+  # X11 / xcb (lowercase by-name attrs; the old xorg.* aliases are not in scope)
   libICE,
   libSM,
   libX11,
-  libxcb,
   libXcomposite,
   libXcursor,
   libXdamage,
@@ -76,14 +80,18 @@
   libXScrnSaver,
   libXt,
   libXtst,
-  xcbutilimage,
-  xcbutilkeysyms,
-  xcbutilrenderutil,
-  xcbutilwm,
-  perl,
+  libxcb,
+  libxau,
+  libxdmcp,
+  libxcb-util,
+  libxcb-image,
+  libxcb-keysyms,
+  libxcb-render-util,
+  libxcb-wm,
 }:
 let
-  # OpenSSL 1.1.1 - required by DingTalk binaries (EOL but needed for compatibility)
+  # DingTalk still ships binaries that link against OpenSSL 1.1.1.  The
+  # nixpkgs attribute has been removed, so build the legacy version locally.
   openssl_1_1 = stdenv.mkDerivation rec {
     pname = "openssl";
     version = "1.1.1w";
@@ -98,9 +106,7 @@ let
       coreutils
     ];
 
-    # OpenSSL uses ./config instead of ./configure
     configurePhase = ''
-      # Fix the config script to use the correct env path
       substituteInPlace config --replace "/usr/bin/env" "${coreutils}/bin/env"
       ./config \
         --prefix=$out \
@@ -121,7 +127,6 @@ let
       make install_sw
     '';
 
-    # Disable tests to speed up build
     doCheck = false;
 
     meta = with lib; {
@@ -132,16 +137,9 @@ let
     };
   };
 
-  # Version from jeffguorg (updated to latest)
   version = "8.2.8.260818002";
-
-  # Multi-arch support from jeffguorg
   arch = if stdenv.hostPlatform.isAarch64 then "arm64" else "amd64";
-
-  # URL pattern from both packages
   url = "https://dtapp-pub.dingtalk.com/dingtalk-desktop/xc_dingtalk_update/linux_deb/Release/com.alibabainc.dingtalk_${version}_${arch}.deb";
-
-  # Hashes for both architectures (from yakkhini and jeffguorg)
   hash =
     if stdenv.hostPlatform.isAarch64 then
       "sha256-placeholder-aarch64-hash"
@@ -152,66 +150,75 @@ let
     inherit url hash;
   };
 
-  # Wayland screenshare support from yakkhini
   dingtalk-wayland-screenshare = callPackage ./wayland-screenshare.nix { };
 
+  # Libraries used at runtime by the prebuilt binary.  The list is derived
+  # from the actual NEEDED entries of the shipped ELF files (binary scanning,
+  # not guessed from the upstream package -- there is no fhsenv).
   libraries = [
+    # CEF / embedded browser
     alsa-lib
     apr
     aprutil
     at-spi2-atk
     at-spi2-core
+    atk
     cairo
     cups
-    curl
     dbus
-    e2fsprogs
+    expat
     fontconfig
     freetype
     fribidi
     gdk-pixbuf
     glib
-    gtkglext
     gnutls
-    graphite2
     gtk3
     harfbuzz
-    icu63
     krb5
     libdrm
     libgcrypt
+    libGL
     libGLU
     libglvnd
-    libidn2
     libinput
     libjpeg
+    libopus
     libpng
-    libpsl
     libpulseaudio
-    libssh2
     libthai
-    libxcrypt-legacy
     libxkbcommon
     mesa
     mtdev
-    nghttp2
     nspr
     nss
     openldap
-    openssl_1_1
     pango
+    pipewire
+    udev
+    wayland
+
+    # Old/legacy libs required by the bundled binaries
+    e2fsprogs
+    gtk2
+    gtkglext
+    icu63
+    libidn2
+    libpsl
+    libssh2
+    openssl_1_1
     pcre2
+    rtmpdump
+    zlib
+
+    # Qt / multimedia / X11
     qt5.qtbase
     qt5.qtmultimedia
     qt5.qtsvg
     qt5.qtx11extras
-    rtmpdump
-    udev
-    util-linux
     libICE
     libSM
     libX11
-    libxcb
     libXcomposite
     libXcursor
     libXdamage
@@ -225,10 +232,14 @@ let
     libXScrnSaver
     libXt
     libXtst
-    xcbutilimage
-    xcbutilkeysyms
-    xcbutilrenderutil
-    xcbutilwm
+    libxcb-util
+    libxcb-image
+    libxcb-keysyms
+    libxcb-render-util
+    libxcb-wm
+    libxcb
+    libxau
+    libxdmcp
   ];
 in
 stdenv.mkDerivation (_finalAttrs: {
@@ -243,9 +254,10 @@ stdenv.mkDerivation (_finalAttrs: {
     copyDesktopItems
     dpkg
   ];
+
   buildInputs = libraries;
 
-  # We will append QT wrapper args to our own wrapper
+  # We create our own wrapper instead of the default Qt wrapper.
   dontWrapQtApps = true;
 
   unpackPhase = ''
@@ -258,7 +270,8 @@ stdenv.mkDerivation (_finalAttrs: {
     mv opt/apps/com.alibabainc.dingtalk/entries entries
     mv opt/apps/com.alibabainc.dingtalk/files/logo.ico logo.ico
 
-    # Cleanup bundled libs that conflict with system ones
+    # Remove bundled libs that conflict with the ones we provide from nixpkgs.
+    # Keep DingTalk's own private libs and the CEF bundle.
     rm -f release/{*.a,*.la,*.prl,dingtalk_crash_report,dingtalk_updater,libapr*,libcrypto.so.*,libcurl.so.*}
     rm -f release/{libdouble-conversion.so.*,libEGL*,libfontconfig*,libfreetype*,libfribidi*,libgbm.*,libgdk*,libGLES*}
     rm -f release/{libgtk*,libgtk-x11-2.0.so.*,libharfbuzz*,libicu*,libidn2*,libjpeg*,libm.so.*,libnghttp2*}
@@ -271,17 +284,16 @@ stdenv.mkDerivation (_finalAttrs: {
   '';
 
   installPhase = ''
-        runHook preInstall
+    runHook preInstall
 
-        install -Dm644 version $out/version
+    install -Dm644 version $out/version
 
-        # Move libraries
-        # DingTalk relies on (some of) the exact libraries it ships with
-        mv release $out/lib
+    # Move the full release tree into $out/lib.
+    mv release $out/lib
 
-        # Entrypoint with input method support (from yakkhini)
-        mkdir -p $out/bin
-        cat > $out/bin/dingtalk <<'EOF'
+    # Entrypoint that sets input method variables based on XMODIFIERS.
+    mkdir -p $out/bin
+    cat > $out/bin/dingtalk <<'EOF'
     #!/usr/bin/env bash
     if [[ "$XMODIFIERS" =~ fcitx ]]; then
       export QT_IM_MODULE=fcitx
@@ -294,27 +306,27 @@ stdenv.mkDerivation (_finalAttrs: {
 
     exec "$0.bin" "$@"
     EOF
-        chmod +x $out/bin/dingtalk
+    chmod +x $out/bin/dingtalk
 
-        makeWrapper $out/lib/com.alibabainc.dingtalk $out/bin/dingtalk.bin \
-          --argv0 "com.alibabainc.dingtalk" \
-          "''${qtWrapperArgs[@]}" \
-          --chdir $out/lib \
-          --unset WAYLAND_DISPLAY \
-          --set QT_QPA_PLATFORM "xcb" \
-          --set QT_AUTO_SCREEN_SCALE_FACTOR 1 \
-          --prefix LD_PRELOAD : "${dingtalk-wayland-screenshare}/lib/libdingtalkhook.so" \
-          --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath libraries}"
+    makeWrapper $out/lib/com.alibabainc.dingtalk $out/bin/dingtalk.bin \
+      --argv0 "com.alibabainc.dingtalk" \
+      "''${qtWrapperArgs[@]}" \
+      --chdir $out/lib \
+      --unset WAYLAND_DISPLAY \
+      --set QT_QPA_PLATFORM "xcb" \
+      --set QT_AUTO_SCREEN_SCALE_FACTOR 1 \
+      --prefix LD_PRELOAD : "${dingtalk-wayland-screenshare}/lib/libdingtalkhook.so" \
+      --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath libraries}"
 
-        # Icons
-        install -Dm644 $out/lib/Resources/image/common/about/logo.png $out/share/pixmaps/dingtalk.png
-        cp logo.ico $out/share/pixmaps/dingtalk.ico
+    # Icons
+    install -Dm644 $out/lib/Resources/image/common/about/logo.png $out/share/pixmaps/dingtalk.png
+    cp logo.ico $out/share/pixmaps/dingtalk.ico
 
-        runHook postInstall
+    runHook postInstall
   '';
 
   postFixup = ''
-    # Fix executable stack issues (from yakkhini)
+    # Fix executable stack issues in bundled binaries.
     execstack -c $out/lib/dingtalk_dll.so
     execstack -c $out/lib/libconference_new.so
   '';
@@ -351,7 +363,7 @@ stdenv.mkDerivation (_finalAttrs: {
       "x86_64-linux"
       "aarch64-linux"
     ];
-    license = licenses.unfreeRedistributable;
+    license = licenses.unfree;
     sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
     mainProgram = "dingtalk";
   };

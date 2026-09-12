@@ -52,15 +52,41 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           NIXPKGS_ALLOW_UNFREE: "1"
         run: |
+          # Only update packages defined within this flake; packages exposed
+          # from nixpkgs/other flakes cannot be updated by nix-update.
+          cat > "$RUNNER_TEMP/update-expr.nix" <<'EOF'
+          let
+            flake = builtins.getFlake (toString ./.);
+            outPath = flake.outPath;
+            pkgs = flake.packages.${builtins.currentSystem};
+            srcFile = p:
+              let
+                pos = builtins.unsafeGetAttrPos "src" p;
+              in
+              if pos != null then pos.file else builtins.elemAt (builtins.match "(.*):([0-9]+)" p.meta.position) 0;
+            isLocal = name:
+              let
+                file = srcFile pkgs.${name};
+              in
+              builtins.substring 0 (builtins.stringLength outPath) file == outPath;
+          in
+          builtins.concatStringsSep "\n" (builtins.filter isLocal (builtins.attrNames pkgs))
+          EOF
+
           nix develop --command bash -c '
             set -e
-            mapfile -t packages < <(find pkgs -name package.nix -exec dirname {} \; | xargs -n1 basename | sort -u)
+            packages=$(nix eval --raw --impure --expr "$(cat "$RUNNER_TEMP/update-expr.nix")")
+            mapfile -t packages <<<"$packages"
+            echo "Packages to update: ${packages[*]}"
+            flag=0
             for pkg in "${packages[@]}"; do
               echo "==> Updating $pkg"
               if ! nix-update --flake "$pkg" --use-update-script; then
-                echo "No update available for $pkg, skipping"
+                echo "error: nix-update failed for $pkg"
+                flag=1
               fi
             done
+            exit "$flag"
           '
 
       - name: Format
