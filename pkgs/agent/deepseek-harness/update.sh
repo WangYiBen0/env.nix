@@ -59,7 +59,8 @@ tar -xzf "$tmp/dsh.tgz" -C "$tmp/src" --strip-components=1
 src_hash="$(nix hash path --sri "$tmp/src")"
 
 echo ">> prefetching npm deps"
-nix shell nixpkgs#prefetch-npm-deps -c prefetch-npm-deps ./package-lock.json >"$tmp/deps-hash"
+nix shell nixpkgs#prefetch-npm-deps -c \
+    env NPM_FETCHER_VERSION=2 prefetch-npm-deps ./package-lock.json >"$tmp/deps-hash"
 deps_hash="$(tail -1 "$tmp/deps-hash")"
 
 sed -i \

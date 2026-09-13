@@ -66,7 +66,7 @@ buildNpmPackage (finalAttrs: {
   '';
 
   npmDepsFetcherVersion = 2;
-  npmDepsHash = "sha256-sCMMuJ3kymbdHRgI3er3XQpKBeLdsV+jd5qNkELZaIA=";
+  npmDepsHash = "sha256-y4FYHgR1AK/+ucT2ZE0V5vt9+lRUIXDsOeF64ivF8h8=";
 
   passthru = {
     packageName = "@deepseek-ai/dsh";
