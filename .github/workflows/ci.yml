@@ -51,7 +51,7 @@ jobs:
     # Serialised after checks so the shared nixpkgs closure is realised once
     # (via Magic Nix Cache) instead of being built twice in parallel.
     needs: checks
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
@@ -80,7 +80,7 @@ jobs:
           extraPullNames: nix-community,catppuccin,niri,nixpkgs-python
 
       - name: Fetch base commit for diff
-        if: github.event.before != '0000000000000000000000000000000000000000'
+        if: github.event.before != '' && github.event.before != '0000000000000000000000000000000000000000'
         run: git fetch --no-tags --depth=1 origin "${{ github.event.before }}"
 
       - name: Build changed packages and push to Cachix
@@ -90,7 +90,7 @@ jobs:
           set -euo pipefail
 
           base="${{ github.event.before }}"
-          if [ "$base" = "0000000000000000000000000000000000000000" ]; then
+          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
             base="${{ github.sha }}^"
           fi
           changed="$(git diff --name-only "$base" "${{ github.sha }}")"
