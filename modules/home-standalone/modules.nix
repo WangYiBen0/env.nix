@@ -1,7 +1,5 @@
-{ inputs, ... }: {
-  imports = with inputs; [
-    hyprland.homeManagerModules.default
-
+{
+  imports = [
     ../home
   ];
 }

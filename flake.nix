@@ -61,14 +61,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    hyprland = {
-      url = "github:hyprwm/Hyprland";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        pre-commit-hooks.follows = "git-hooks";
-      };
-    };
-
     niri = {
       url = "github:niri-wm/niri";
       inputs.nixpkgs.follows = "nixpkgs";

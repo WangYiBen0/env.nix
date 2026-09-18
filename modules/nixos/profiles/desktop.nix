@@ -23,7 +23,6 @@
 
     programs = {
       firefox.enable = true;
-      # hyprland.enable = true;
       niri.enable = true;
 
       steam = {

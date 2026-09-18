@@ -18,20 +18,6 @@ forAllSystems (
     inherit (allPackages.fonts) lxgw-neozhisong lxgw-zhenkai zhuque-fangsong;
     inherit (allPackages.agent) miyu deepseek-harness dsh-tui;
     inherit (allPackages.applications) dingtalk cele-mod loenn;
-    inherit (pkgsFor system)
-      aquamarine
-      hyprland
-      hyprlang
-      hyprcursor
-      hyprgraphics
-      hyprland-protocols
-      hyprutils
-      hyprwayland-scanner
-      hyprwire
-      udis86-hyprland
-      xdg-desktop-portal-hyprland
-      niri
-      xwayland-satellite
-      ;
+    inherit (pkgsFor system) niri xwayland-satellite;
   }
 )
