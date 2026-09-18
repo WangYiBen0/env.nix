@@ -47,9 +47,27 @@ jobs:
           NIXPKGS_ALLOW_UNFREE: "1"
         run: nix flake check
 
+  flakehub-publish:
+    needs: checks
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: DeterminateSystems/determinate-nix-action@v3
+
+      - uses: DeterminateSystems/flakehub-push@main
+        env:
+          NIXPKGS_ALLOW_UNFREE: "1"
+        with:
+          name: W1ngD1nGa5ter/env.nix
+          rolling: true
+          visibility: unlisted
+          include-output-paths: true
+
   cache:
-    # Serialised after checks so the shared nixpkgs closure is realised once
-    # (via Magic Nix Cache) instead of being built twice in parallel.
     needs: checks
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
