@@ -17,11 +17,11 @@ let
 in
 buildNpmPackage (finalAttrs: {
   pname = "deepseek-harness";
-  version = "0.1.5-rc.1";
+  version = "0.1.5-rc.2";
 
   src = fetchzip {
     url = "https://registry.npmjs.org/@deepseek-ai/dsh/-/dsh-${finalAttrs.version}.tgz";
-    hash = "sha256-xOFQvF0qRUKfEAm4sa9D3X0DdieI1rqfZo+20d1VY88=";
+    hash = "sha256-LxvNi+tq8RyezVfMbxoIMxjV5ozp1gLRaxGgReS6R2s=";
   };
 
   postPatch = ''
@@ -66,7 +66,7 @@ buildNpmPackage (finalAttrs: {
   '';
 
   npmDepsFetcherVersion = 2;
-  npmDepsHash = "sha256-y4FYHgR1AK/+ucT2ZE0V5vt9+lRUIXDsOeF64ivF8h8=";
+  npmDepsHash = "sha256-A+1tKbHhdKQ2t94/MZmg+C//zBonbX5HZCdcj8E9Rlg=";
 
   passthru = {
     packageName = "@deepseek-ai/dsh";
