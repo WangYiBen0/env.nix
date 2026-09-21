@@ -28,13 +28,13 @@ in
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "cele-mod";
-  version = "1.1.11";
+  version = "1.2.1";
 
   src = fetchFromGitHub {
     owner = "std-microblock";
     repo = "CeleMod";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-0dfDIt6/ONgqUo7+X+cIe0SR1RknyOpN39BurKaX+fA=";
+    hash = "sha256-A3LWCZdd7z2ylrrcCKl0/AWi++XVg4mZVBVJK/EEuK0=";
   };
 
   # The Cargo.toml/Cargo.lock of the tauri workspace live in the repo root;
@@ -42,13 +42,13 @@ rustPlatform.buildRustPackage (finalAttrs: {
   cargoRoot = ".";
   buildAndTestSubdir = "src-tauri";
   cargoDepsName = "cele-mod";
-  cargoHash = "sha256-Qu9vCbZf2wYmE4emPq/DKdWO3PkbTgxPa9PTjesQtUU=";
+  cargoHash = "sha256-0cDrRKfRl6gVs7nkizottGRQyyXnkH5MKZlH0DhmgKI=";
 
   pnpmDeps = fetchPnpmDeps {
     inherit (finalAttrs) pname version src;
     sourceRoot = "${finalAttrs.src.name}/src/celemod-ui";
     fetcherVersion = 4;
-    hash = "sha256-So4A33uPWLNEsW8Ca5Vsgqkc4WdcYtWA0P8D0lLROnQ=";
+    hash = "sha256-YRVBPsBcupf/AtjH6E8uhlUEJsaeKuDuOqdqlwNMPrw=";
   };
 
   pnpmRoot = "src/celemod-ui";
