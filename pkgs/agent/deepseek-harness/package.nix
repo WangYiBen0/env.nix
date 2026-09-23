@@ -1,85 +1,181 @@
 {
   lib,
-  buildNpmPackage,
-  fetchzip,
-  makeWrapper,
-  nodejs,
-  pnpm,
-  bash,
+  stdenv,
+  curl,
+  fetchFromGitHub,
+  fetchPnpmDeps,
+  makeBinaryWrapper,
+  nodejs_24,
+  pnpm_11,
+  pnpmBuildHook,
+  pnpmConfigHook,
+  runCommand,
+  nix-update-script,
+  testers,
+  ...
 }:
 
-let
-  runtimePath = lib.makeBinPath [
-    bash
-    nodejs
-    pnpm
-  ];
-in
-buildNpmPackage (finalAttrs: {
+stdenv.mkDerivation (finalAttrs: {
   pname = "deepseek-harness";
-  version = "0.1.5-rc.2";
+  version = "0.1.6-alpha.1";
 
-  src = fetchzip {
-    url = "https://registry.npmjs.org/@deepseek-ai/dsh/-/dsh-${finalAttrs.version}.tgz";
-    hash = "sha256-LxvNi+tq8RyezVfMbxoIMxjV5ozp1gLRaxGgReS6R2s=";
+  strictDeps = true;
+  __structuredAttrs = true;
+
+  src = fetchFromGitHub {
+    owner = "deepseek-ai";
+    repo = "deepseek-harness";
+    rev = "dsh-v${finalAttrs.version}";
+    hash = "sha256-EmbNOCPjdwY9Jv9ZzFwBIaNdPDC4kantCq0dHunonTQ=";
+
+    # Capture the commit hash at fetch time to avoid git build dependency
+    leaveDotGit = true;
+    postFetch = ''
+      cd $out
+      git rev-parse HEAD > .git-commit
+      rm -rf .git
+    '';
   };
 
-  postPatch = ''
-    cp ${./package-lock.json} package-lock.json
-    chmod u+w package-lock.json
-    if command -v node >/dev/null; then
-      node -e "
-        const fs = require('fs');
-        const pkg = JSON.parse(fs.readFileSync('package.json'));
-        delete pkg.devDependencies;
-        fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-      "
-    fi
+  pnpmDeps = fetchPnpmDeps {
+    inherit (finalAttrs) pname version src;
+    pnpm = pnpm_11;
+    fetcherVersion = 4;
+    hash = "sha256-DNGGgnec3hFUs3LDorlUGzzgRT88i33y8TqyXfoXVnY=n";
+  };
+
+  nativeBuildInputs = [
+    nodejs_24
+    pnpmConfigHook
+    pnpmBuildHook
+    pnpm_11
+    makeBinaryWrapper
+  ];
+
+  preBuild = ''
+    export DSH_CLIENT_COMMIT_HASH=$(cat $src/.git-commit)
+    export DSH_CLIENT_BUILD_PROFILE="official";
   '';
 
-  dontNpmBuild = true;
+  # The root 'build' script runs both 'build:lib' and 'build:web'
+  # pnpmBuildHook runs 'pnpm run build' by default
+  installPhase = ''
+    runHook preInstall
 
-  nativeBuildInputs = [ makeWrapper ];
+    mkdir -p $out/libexec/dsh
+    cp -r . $out/libexec/dsh/
 
-  postFixup = ''
-    rm $out/bin/dsh
-    makeWrapper ${nodejs}/bin/node $out/bin/dsh \
-      --add-flags "--expose-internals" \
-      --add-flags "$out/lib/node_modules/@deepseek-ai/dsh/lib/bin.js" \
-      --prefix PATH : ${runtimePath} \
-      --suffix PATH : $out/bin
+    # The .git-commit marker only feeds the build-time commit stamp.
+    rm -f $out/libexec/dsh/.git-commit
 
-    # Drop node-pty prebuilds for foreign platforms so the PTY backend only
-    # resolves the native addon for the host OS.
-    nodePtyPrebuilds="$out/lib/node_modules/@deepseek-ai/dsh/node_modules/node-pty/prebuilds"
-    if [ -d "$nodePtyPrebuilds" ]; then
-      find "$nodePtyPrebuilds" -mindepth 1 -maxdepth 1 -type d \
-        \( -name 'darwin-*' -o -name 'win32-*' \) -exec rm -rf {} +
-    fi
+    # The whole tree is shipped because workspace packages resolve in-tree via
+    # linkWorkspacePackages; dev/test/doc files come along for the ride.
 
-    # dsh-terminal-bash hardcodes /bin/bash as the default shell; on NixOS that
-    # path does not exist. Rewrite the fallback so any preset or profile that
-    # does not set an explicit shellPath still resolves a usable bash.
-    find "$out/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/dsh-terminal-bash" \
-      -path "*/lib/index.js" -exec \
-      sed -i 's#const DEFAULT_BASH_SHELL = "/bin/bash";#const DEFAULT_BASH_SHELL = "${lib.getExe bash}";#' {} +
+    # Optional cross-platform binary packages leave dangling symlinks in
+    # node_modules/.pnpm; drop them so the fixup phase passes.
+    find $out/libexec/dsh/node_modules/.pnpm -type l ! -exec test -e {} \; -delete
+
+    # pnpm only links workspace packages into each dependent package's own
+    # node_modules, so the loader's bare `import(name)` (vendor/loader) cannot
+    # resolve workspace specifiers from its own directory. Mirror the virtual
+    # store's scoped packages into the root node_modules so bare specifiers
+    # resolve anywhere in the tree. This relies on `linkWorkspacePackages: true`
+    # in upstream's pnpm-workspace.yaml, which is what places workspace
+    # packages under .pnpm/node_modules at all.
+    shopt -s nullglob
+    store_scopes=("$out/libexec/dsh/node_modules/.pnpm/node_modules/"@*/)
+    for scope in "''${store_scopes[@]}"; do
+      scope_name=$(basename "$scope")
+      mkdir -p "$out/libexec/dsh/node_modules/$scope_name"
+      for pkg in "$scope"*; do
+        # -n: do not dereference an existing symlink-to-dir (e.g. the root
+        # devDep dsh-tool-session-query) when replacing it.
+        ln -sfn "../.pnpm/node_modules/$scope_name/$(basename "$pkg")" \
+          "$out/libexec/dsh/node_modules/$scope_name/$(basename "$pkg")"
+      done
+    done
+
+    # --expose-internals is required by the HMR service and the loader's
+    # internal module loader; it must precede the script path so it lands in
+    # process.execArgv. Depends on Node internals, not a stable API.
+    makeBinaryWrapper ${nodejs_24}/bin/node $out/bin/dsh \
+      --add-flags "--expose-internals $out/libexec/dsh/apps/cli/lib/bin.js"
+
+    runHook postInstall
   '';
 
-  npmDepsFetcherVersion = 2;
-  npmDepsHash = "sha256-A+1tKbHhdKQ2t94/MZmg+C//zBonbX5HZCdcj8E9Rlg=";
+  doInstallCheck = true;
+  installCheckPhase = ''
+    export HOME=$TMPDIR
+    $out/bin/dsh --version
+  '';
 
   passthru = {
-    packageName = "@deepseek-ai/dsh";
-    updateScript = [
-      ./update.sh
-    ];
+    updateScript = nix-update-script {
+      # TODO: Drop after 1.0
+      extraArgs = [
+        "--version"
+        "unstable"
+      ];
+    };
+    tests = {
+      version = testers.testVersion { package = finalAttrs.finalPackage; };
+
+      # Boots the web profile and verifies the server actually serves. Guards the
+      # fragile parts: the loader's bare import() of workspace specifiers and the
+      # --expose-internals requirement.
+      web-boot = runCommand "deepseek-harness-web-boot" { nativeBuildInputs = [ curl ]; } ''
+        export HOME=$TMPDIR
+
+        echo "Running deepseek-harness..."
+        ${finalAttrs.finalPackage}/bin/dsh --profile web --no-open >server.log 2>&1 &
+        pid=$!
+        trap 'kill $pid 2>/dev/null || true' EXIT
+
+        # Find the serving url with the session cookie
+        for i in $(seq 1 30); do
+          if launch_url=$(grep -o 'http://127.0.0.1:3080/?token=[^[:space:]]*' server.log); then
+            break
+          fi
+          sleep 1
+        done
+        if [ -z "''${launch_url:-}" ]; then
+          echo "dsh web profile failed to print the authenticated launch URL" >&2
+          cat server.log >&2
+          exit 1
+        fi
+        echo "✓ Found launch URL on server logs ($launch_url)"
+
+        # Verify we get a seemingly valid page served.
+        if ! curl -fsSL -c cookies.txt "$launch_url" >page.html 2>curl.log \
+          || ! grep -q '<!doctype html>' page.html; then
+          echo "dsh web profile failed to serve the index via the launch token" >&2
+          cat curl.log >&2
+          cat server.log >&2
+          exit 1
+        fi
+        echo "✓ Found seemingly valid HTML on it"
+
+        touch $out
+      '';
+    };
   };
 
-  meta = with lib; {
-    description = "Open-source agent harness developed by DeepSeek AI, everything is a plugin";
+  meta = {
+    description = "AI agent harness with a plugin-based architecture";
+    longDescription = ''
+      DeepSeek Harness (dsh) is a self-hosted AI agent harness built around a
+      plugin architecture — "Everything is a Plugin". It ships a CLI and a web
+      UI and is extended through workspace plugins.
+    '';
     homepage = "https://github.com/deepseek-ai/deepseek-harness";
-    license = licenses.mit;
+    license = lib.licenses.mit;
+
     mainProgram = "dsh";
-    platforms = platforms.linux;
+
+    platforms = [
+      "aarch64-linux"
+      "x86_64-linux"
+    ];
   };
 })
