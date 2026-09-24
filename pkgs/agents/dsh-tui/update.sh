@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd pkgs/agent/dsh-tui/
+cd pkgs/agents/dsh-tui/
 
 if [ $# -gt 1 ]; then
   echo "usage: $0 [version]" >&2

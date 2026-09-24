@@ -9,11 +9,11 @@
 
 buildNpmPackage (finalAttrs: {
   pname = "dsh-tui";
-  version = "0.10.2";
+  version = "0.11.0";
 
   src = fetchzip {
     url = "https://registry.npmjs.org/@deepseek-harness-tui/dsh-tui/-/dsh-tui-${finalAttrs.version}.tgz";
-    hash = "sha256-/X130HHVgVxvuW2nY+vX1oFiVTC5A9bEESb93wD348I=";
+    hash = "sha256-3jeYWrtrPDnSEe4+Qp/C3x9A70YTfb8yI7x1SN3SJDA=";
   };
 
   postPatch = ''
@@ -50,7 +50,7 @@ buildNpmPackage (finalAttrs: {
   '';
 
   npmDepsFetcherVersion = 2;
-  npmDepsHash = "sha256-JuLJcor83r6jsZECFNqybg7osGwR4RSucIYwk3Mrg0g=";
+  npmDepsHash = "sha256-hUfwy74+bSmoLDaEcmPsL6D7GMuegwZW1isbW/keH70=";
 
   passthru.updateScript = ./update.sh;
 
