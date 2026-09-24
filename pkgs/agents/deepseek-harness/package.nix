@@ -17,7 +17,7 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "deepseek-harness";
-  version = "0.1.6-alpha.1";
+  version = "0.1.7-rc.1";
 
   strictDeps = true;
   __structuredAttrs = true;
@@ -26,7 +26,7 @@ stdenv.mkDerivation (finalAttrs: {
     owner = "deepseek-ai";
     repo = "deepseek-harness";
     rev = "dsh-v${finalAttrs.version}";
-    hash = "sha256-EmbNOCPjdwY9Jv9ZzFwBIaNdPDC4kantCq0dHunonTQ=";
+    hash = "sha256-PQTHHat/3PpeGTwzSHSM7AfVgghzDVGMtImODZnR40c=";
 
     # Capture the commit hash at fetch time to avoid git build dependency
     leaveDotGit = true;
@@ -37,11 +37,19 @@ stdenv.mkDerivation (finalAttrs: {
     '';
   };
 
+  # internalModules() calls node-addon-require-builtin unconditionally, but
+  # its binary scan does not recognize toolchain-built Node
+  # (Unsupported/no-getter), breaking every `dsh --profile …` boot. Prefer a
+  # plain require under --expose-internals (which the wrapper below passes).
+  patches = [
+    ./expose-internals-profile-resolution.patch
+  ];
+
   pnpmDeps = fetchPnpmDeps {
     inherit (finalAttrs) pname version src;
     pnpm = pnpm_11;
     fetcherVersion = 4;
-    hash = "sha256-DNGGgnec3hFUs3LDorlUGzzgRT88i33y8TqyXfoXVnY=n";
+    hash = "sha256-ec8cTYvji3Xw5+vkETJk62aZ8Ku0YEU9rrUvgcmT6LY=";
   };
 
   nativeBuildInputs = [
@@ -177,5 +185,6 @@ stdenv.mkDerivation (finalAttrs: {
       "aarch64-linux"
       "x86_64-linux"
     ];
+    maintainers = with lib.maintainers; [ Dietr1ch ];
   };
 })

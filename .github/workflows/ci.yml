@@ -29,6 +29,9 @@ jobs:
             access-tokens = github.com=${{ github.token }}
             experimental-features = nix-command flakes
 
+      - name: Log in to FlakeHub
+        run: /usr/local/bin/determinate-nixd login github-action
+
       - name: Enable Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@v14
         with:

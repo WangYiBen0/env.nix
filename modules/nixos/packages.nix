@@ -19,6 +19,8 @@
     rar
     unrar
     _7zz
+    ntfsprogs-plus
+    exfatprogs
 
     # utils
     fastfetch

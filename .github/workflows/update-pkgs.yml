@@ -30,6 +30,9 @@ jobs:
             access-tokens = github.com=${{ github.token }}
             experimental-features = nix-command flakes
 
+      - name: Log in to FlakeHub
+        run: /usr/local/bin/determinate-nixd login github-action
+
       - name: Enable Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@v14
         with:
@@ -42,14 +45,27 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community,catppuccin,niri,nixpkgs-python
 
+      - name: Config git
+        run: |
+          git checkout -B main
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Update flake inputs
+        id: lock
         env:
           NIXPKGS_ALLOW_UNFREE: "1"
-        run: nix flake update
+        run: |
+          nix flake update
+          if ! git diff --quiet; then
+            git add --all
+            git commit --message "chore(flake): update flake.lock"
+            echo "updated=true" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Update pkgs packages
+      - name: Update pkgs
+        id: pkgs
         env:
-          GH_TOKEN: ${{ github.token }}
           NIXPKGS_ALLOW_UNFREE: "1"
         run: |
           # Only update packages defined within this flake; packages exposed
@@ -73,56 +89,61 @@ jobs:
           builtins.concatStringsSep "\n" (builtins.filter isLocal (builtins.attrNames pkgs))
           EOF
 
+          # nix-update exits non-zero via an uncaught VersionError when the
+          # newest release is unstable but --version=unstable is not requested;
+          # treat that like "no update" instead of failing the run.
+          cat > "$RUNNER_TEMP/nix-update-wrapper.py" <<'EOF'
+          import sys
+
+          from nix_update import main
+          from nix_update.errors import VersionError
+
+          try:
+              main(sys.argv[1:])
+          except VersionError as e:
+              print(f"nix-update: {e}", file=sys.stderr)
+              sys.exit(0)
+          EOF
+
           nix develop --command bash -c '
             set -e
             packages=$(nix eval --raw --impure --expr "$(cat "$RUNNER_TEMP/update-expr.nix")")
             mapfile -t packages <<<"$packages"
             echo "Packages to update: ${packages[*]}"
+
+            nu=$(command -v nix-update)
+            bindir=$(dirname "$nu")
+            appdir=$(dirname "$bindir")
+            nu_py=$(head -n1 "$bindir/.nix-update-wrapped" | sed "s/^#!//")
+            export PYTHONPATH="$(echo "$appdir"/lib/python*/site-packages)${PYTHONPATH:+:$PYTHONPATH}"
+
             flag=0
+            changed=()
             for pkg in "${packages[@]}"; do
               echo "==> Updating $pkg"
-              if ! nix-update --flake "$pkg" --use-update-script; then
+              if ! "$nu_py" "$RUNNER_TEMP/nix-update-wrapper.py" --flake "$pkg" --use-update-script; then
                 echo "error: nix-update failed for $pkg"
                 flag=1
+              elif ! git diff --quiet; then
+                changed+=("$pkg")
+                git add --all
               fi
             done
+
+            if [ ${#changed[@]} -gt 0 ]; then
+              git commit --message "chore(pkgs): update ${changed[*]}"
+              printf "updated=true\nchanged=%s\n" "${changed[*]}" >> "$GITHUB_OUTPUT"
+            else
+              printf "updated=\n" >> "$GITHUB_OUTPUT"
+            fi
+
             exit "$flag"
           '
 
-      - name: Format
-        run: |
-          nix develop --command bash -c '
-            nixfmt $(git ls-files "*.nix"; git ls-files --others --exclude-standard "*.nix")
-            prettier --ignore-unknown --write .
-          '
-
-      - name: Check for changes
-        id: changes
-        run: |
-          if git diff --quiet; then
-            echo "No updates found"
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "Updates found:"
-            git diff --stat
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Commit and push
+      - name: Push
         id: push
-        if: steps.changes.outputs.changed == 'true'
+        if: steps.lock.outputs.updated == 'true' || steps.pkgs.outputs.updated == 'true'
         run: |
-          git checkout -B main
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          changed=$(git diff --name-only -- pkgs | xargs -n1 dirname | xargs -n1 basename | sort -u | paste -sd ' ' -)
-          if [ -n "$changed" ]; then
-            msg="chore(pkgs): update $changed"
-          else
-            msg="chore(flake): update flake.lock"
-          fi
-          git add -A
-          git commit -m "$msg"
           git pull --rebase origin main
           git push origin main
           echo "pushed=true" >> "$GITHUB_OUTPUT"
