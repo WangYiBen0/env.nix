@@ -30,13 +30,8 @@ jobs:
             access-tokens = github.com=${{ github.token }}
             experimental-features = nix-command flakes
 
-      - name: Log in to FlakeHub
-        run: /usr/local/bin/determinate-nixd login github-action
-
       - name: Enable Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@v14
-        with:
-          use-flakehub: "enabled"
 
       - name: Set up Cachix
         uses: cachix/cachix-action@v17
@@ -85,8 +80,15 @@ jobs:
                 file = srcFile pkgs.${name};
               in
               builtins.substring 0 (builtins.stringLength outPath) file == outPath;
+            relFile = name:
+              let
+                file = srcFile pkgs.${name};
+              in
+              builtins.substring (builtins.stringLength outPath + 1) (builtins.stringLength file - builtins.stringLength outPath - 1) file;
           in
-          builtins.concatStringsSep "\n" (builtins.filter isLocal (builtins.attrNames pkgs))
+          builtins.concatStringsSep "\n" (
+            builtins.map (name: "${name}	${relFile name}") (builtins.filter isLocal (builtins.attrNames pkgs))
+          )
           EOF
 
           # nix-update exits non-zero via an uncaught VersionError when the
@@ -119,9 +121,10 @@ jobs:
 
             flag=0
             changed=()
-            for pkg in "${packages[@]}"; do
-              echo "==> Updating $pkg"
-              if ! "$nu_py" "$RUNNER_TEMP/nix-update-wrapper.py" --flake "$pkg" --use-update-script; then
+            for entry in "${packages[@]}"; do
+              read -r pkg file <<<"$entry"
+              echo "==> Updating $pkg ($file)"
+              if ! "$nu_py" "$RUNNER_TEMP/nix-update-wrapper.py" --flake "$pkg" --override-filename "$file" --use-update-script; then
                 echo "error: nix-update failed for $pkg"
                 flag=1
               elif ! git diff --quiet; then
