@@ -17,7 +17,7 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "deepseek-harness";
-  version = "0.1.7-rc.1";
+  version = "0.1.7-rc.2";
 
   strictDeps = true;
   __structuredAttrs = true;
@@ -26,7 +26,7 @@ stdenv.mkDerivation (finalAttrs: {
     owner = "deepseek-ai";
     repo = "deepseek-harness";
     rev = "dsh-v${finalAttrs.version}";
-    hash = "sha256-PQTHHat/3PpeGTwzSHSM7AfVgghzDVGMtImODZnR40c=";
+    hash = "sha256-ASGd0RLQnn+umMA+eCSGZ+AhoupkVzzY7MT6+GjpwmA=";
 
     # Capture the commit hash at fetch time to avoid git build dependency
     leaveDotGit = true;
@@ -37,19 +37,15 @@ stdenv.mkDerivation (finalAttrs: {
     '';
   };
 
-  # internalModules() calls node-addon-require-builtin unconditionally, but
-  # its binary scan does not recognize toolchain-built Node
-  # (Unsupported/no-getter), breaking every `dsh --profile …` boot. Prefer a
-  # plain require under --expose-internals (which the wrapper below passes).
-  patches = [
-    ./expose-internals-profile-resolution.patch
-  ];
+  env = {
+    pnpm_config_reporter = "append-only";
+  };
 
   pnpmDeps = fetchPnpmDeps {
     inherit (finalAttrs) pname version src;
     pnpm = pnpm_11;
     fetcherVersion = 4;
-    hash = "sha256-ec8cTYvji3Xw5+vkETJk62aZ8Ku0YEU9rrUvgcmT6LY=";
+    hash = "sha256-rDV6HxYwnPROBOP7/JY/cZ7kqmxv0zxOncjJghIvvM4=";
   };
 
   nativeBuildInputs = [
@@ -107,7 +103,13 @@ stdenv.mkDerivation (finalAttrs: {
     # internal module loader; it must precede the script path so it lands in
     # process.execArgv. Depends on Node internals, not a stable API.
     makeBinaryWrapper ${nodejs_24}/bin/node $out/bin/dsh \
-      --add-flags "--expose-internals $out/libexec/dsh/apps/cli/lib/bin.js"
+      --add-flags "--expose-internals $out/libexec/dsh/apps/cli/lib/bin.js" \
+      --prefix PATH : ${
+        lib.makeBinPath [
+          nodejs_24
+          pnpm_11
+        ]
+      }
 
     runHook postInstall
   '';
@@ -121,9 +123,17 @@ stdenv.mkDerivation (finalAttrs: {
   passthru = {
     updateScript = nix-update-script {
       # TODO: Drop after 1.0
+      # Tags are prefixed with "dsh-v"; strip it during extraction so the
+      # prefix never leaks into the `version` field (which happens when the
+      # pinned version is already the latest tag — nix-update falls back to
+      # the raw tag and only strips a bare "v", corrupting
+      # `rev = "dsh-v${finalAttrs.version}"`).
       extraArgs = [
+        "--flake"
         "--version"
         "unstable"
+        "--version-regex"
+        "dsh-v(.*)"
       ];
     };
     tests = {
@@ -185,6 +195,5 @@ stdenv.mkDerivation (finalAttrs: {
       "aarch64-linux"
       "x86_64-linux"
     ];
-    maintainers = with lib.maintainers; [ Dietr1ch ];
   };
 })
