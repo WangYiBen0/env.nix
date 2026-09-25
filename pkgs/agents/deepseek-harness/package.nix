@@ -1,6 +1,7 @@
 {
   lib,
   stdenv,
+  bubblewrap,
   curl,
   fetchFromGitHub,
   fetchPnpmDeps,
@@ -48,6 +49,16 @@ stdenv.mkDerivation (finalAttrs: {
     hash = "sha256-rDV6HxYwnPROBOP7/JY/cZ7kqmxv0zxOncjJghIvvM4=";
   };
 
+  postPatch = ''
+    substituteInPlace packages/boot/app-boot/src/profile-resolution/resolver.ts \
+      --replace-fail \
+      "  const addon = require('node-addon-require-builtin') as { requireBuiltin(moduleId: string): unknown }" \
+      "  const requireBuiltin: (moduleId: string) => unknown = process.execArgv.includes('--expose-internals') ? require : require('node-addon-require-builtin').requireBuiltin" \
+      --replace-fail \
+      "addon.requireBuiltin(" \
+      "requireBuiltin("
+  '';
+
   nativeBuildInputs = [
     nodejs_24
     pnpmConfigHook
@@ -66,7 +77,7 @@ stdenv.mkDerivation (finalAttrs: {
   installPhase = ''
     runHook preInstall
 
-    mkdir -p $out/libexec/dsh
+    mkdir -p $out/bin $out/libexec/dsh
     cp -r . $out/libexec/dsh/
 
     # The .git-commit marker only feeds the build-time commit stamp.
@@ -99,6 +110,8 @@ stdenv.mkDerivation (finalAttrs: {
       done
     done
 
+    ln -s ../libexec/dsh/node_modules/pnpm/bin/pnpm.mjs $out/bin/pnpm
+
     # --expose-internals is required by the HMR service and the loader's
     # internal module loader; it must precede the script path so it lands in
     # process.execArgv. Depends on Node internals, not a stable API.
@@ -106,10 +119,10 @@ stdenv.mkDerivation (finalAttrs: {
       --add-flags "--expose-internals $out/libexec/dsh/apps/cli/lib/bin.js" \
       --prefix PATH : ${
         lib.makeBinPath [
+          bubblewrap
           nodejs_24
-          pnpm_11
         ]
-      }
+      }:$out/bin
 
     runHook postInstall
   '';
@@ -118,6 +131,16 @@ stdenv.mkDerivation (finalAttrs: {
   installCheckPhase = ''
     export HOME=$TMPDIR
     $out/bin/dsh --version
+
+    expected_pnpm_version=$(
+      ${nodejs_24}/bin/node -p \
+        "require('$out/libexec/dsh/package.json').packageManager.split('@')[1]"
+    )
+    actual_pnpm_version=$(
+      cd $out/libexec/dsh
+      PNPM_CONFIG_PM_ON_FAIL=error $out/bin/pnpm --version
+    )
+    test "$actual_pnpm_version" = "$expected_pnpm_version"
   '';
 
   passthru = {
