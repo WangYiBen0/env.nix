@@ -1,58 +1,66 @@
 {
   lib,
-  buildNpmPackage,
+  stdenv,
+  bubblewrap,
   fetchzip,
-  makeWrapper,
-  nodejs,
-  pnpm,
+  makeBinaryWrapper,
+  nodejs_24,
+  pnpm_11,
 }:
 
-buildNpmPackage (finalAttrs: {
+stdenv.mkDerivation (finalAttrs: {
   pname = "dsh-tui";
   version = "0.11.0";
+
+  strictDeps = true;
+  __structuredAttrs = true;
 
   src = fetchzip {
     url = "https://registry.npmjs.org/@deepseek-harness-tui/dsh-tui/-/dsh-tui-${finalAttrs.version}.tgz";
     hash = "sha256-3jeYWrtrPDnSEe4+Qp/C3x9A70YTfb8yI7x1SN3SJDA=";
   };
 
-  postPatch = ''
-    cp ${./package-lock.json} package-lock.json
-    chmod u+w package-lock.json
-    if command -v node >/dev/null; then
-      node -e "
-        const fs = require('fs');
-        const pkg = JSON.parse(fs.readFileSync('package.json'));
-        delete pkg.devDependencies;
-        delete pkg.peerDependencies;
-        delete pkg.optionalDependencies;
-        delete pkg.scripts;
-        fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-      "
-    fi
-  '';
+  # The published tarball is a launcher plus a TUI that gets installed into the
+  # dsh profile by `dsh plugin add` on first run, which brings its own
+  # dependency tree. The store copy only ever executes bin/dsh-tui.js, which
+  # upstream keeps free of lib/ imports, so no npm dependencies are fetched or
+  # installed here.
+  nativeBuildInputs = [
+    makeBinaryWrapper
+    nodejs_24
+  ];
 
-  dontNpmBuild = true;
-  npmFlags = [ "--legacy-peer-deps" ];
+  dontConfigure = true;
+  dontBuild = true;
 
-  nativeBuildInputs = [ makeWrapper ];
+  installPhase = ''
+    runHook preInstall
 
-  postFixup = ''
-    rm $out/bin/dsh-tui
-    makeWrapper ${nodejs}/bin/node $out/bin/dsh-tui \
-      --add-flags "$out/lib/node_modules/@deepseek-harness-tui/dsh-tui/bin/dsh-tui.js" \
+    mkdir -p $out/bin $out/libexec/dsh-tui/bin
+    install -m644 bin/dsh-tui.js $out/libexec/dsh-tui/bin/dsh-tui.js
+    install -m644 package.json $out/libexec/dsh-tui/package.json
+
+    makeBinaryWrapper ${nodejs_24}/bin/node $out/bin/dsh-tui \
+      --add-flags "$out/libexec/dsh-tui/bin/dsh-tui.js" \
       --prefix PATH : ${
         lib.makeBinPath [
-          nodejs
-          pnpm
+          bubblewrap
+          nodejs_24
+          pnpm_11
         ]
       }
+
+    # Upstream also advertises `dst` as an alias bin entry.
+    ln -s dsh-tui $out/bin/dst
+
+    runHook postInstall
   '';
 
-  npmDepsFetcherVersion = 2;
-  npmDepsHash = "sha256-hUfwy74+bSmoLDaEcmPsL6D7GMuegwZW1isbW/keH70=";
-
-  passthru.updateScript = ./update.sh;
+  doInstallCheck = true;
+  installCheckPhase = ''
+    $out/bin/dsh-tui help >/dev/null
+    $out/bin/dst help >/dev/null
+  '';
 
   meta = with lib; {
     description = "Terminal UI launcher for DeepSeek Harness";
