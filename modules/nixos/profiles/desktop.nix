@@ -50,7 +50,6 @@
         libreoffice-qt
         inkscape
         hmcl
-        olympus
 
         chromium
       ];

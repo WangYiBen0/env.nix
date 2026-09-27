@@ -13,7 +13,7 @@
 
       distrobox
 
-      wine-staging
+      wineWow64Packages.waylandFull
       winetricks
 
       mono
