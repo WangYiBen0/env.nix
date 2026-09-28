@@ -10,16 +10,16 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "miyu";
-  version = "0.6.2";
+  version = "0.7.0";
 
   src = fetchFromGitHub {
     owner = "SHORiN-KiWATA";
     repo = "Miyu";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-+bmk4G7UuQ3eFC4/3OCOnYs3BTdV8NJZHW5WE3ogP4o=";
+    hash = "sha256-pCsrcScjhs+ZdORbtWixwnDiEzA1UNiUsFZliBE5I8c=";
   };
 
-  cargoHash = "sha256-bIGkzvnWxbB8ue3geYOtTlIOQyj69L8Hes1PeMT+aCA=";
+  cargoHash = "sha256-XqqZnbD/3p/D8awhx2Vu0Uq52eeVnV3nui8yeDCO05Q=";
 
   nativeBuildInputs = [ pkg-config ];
   buildInputs = [
