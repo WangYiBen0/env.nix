@@ -18,7 +18,7 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "deepseek-harness";
-  version = "0.1.7-rc.2";
+  version = "0.2.0-rc.1";
 
   strictDeps = true;
   __structuredAttrs = true;
@@ -27,7 +27,7 @@ stdenv.mkDerivation (finalAttrs: {
     owner = "deepseek-ai";
     repo = "deepseek-harness";
     rev = "dsh-v${finalAttrs.version}";
-    hash = "sha256-ASGd0RLQnn+umMA+eCSGZ+AhoupkVzzY7MT6+GjpwmA=";
+    hash = "sha256-VkjJaYlUYuZjEqKSXi3x7vIYD+9jIQAAVcL+Ttocou4=";
 
     # Capture the commit hash at fetch time to avoid git build dependency
     leaveDotGit = true;
@@ -46,7 +46,7 @@ stdenv.mkDerivation (finalAttrs: {
     inherit (finalAttrs) pname version src;
     pnpm = pnpm_11;
     fetcherVersion = 4;
-    hash = "sha256-rDV6HxYwnPROBOP7/JY/cZ7kqmxv0zxOncjJghIvvM4=";
+    hash = "sha256-nf943HpUoW1Ai+UEZd9MsO/4ZmvpesFkHaoNUtY6Iwc=";
   };
 
   postPatch = ''
