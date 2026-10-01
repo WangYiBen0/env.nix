@@ -27,6 +27,7 @@
       nemo-with-extensions
       osu-lazer-bin
       spotify-spotx
+      hmcl
       cele-mod
     ];
 

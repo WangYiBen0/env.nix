@@ -41,7 +41,6 @@
         dingtalk
         telegram-desktop
 
-        noctalia-shell
         fuzzel
         swaylock
         kdePackages.plasma-browser-integration
@@ -49,9 +48,14 @@
         gnome-tweaks
         libreoffice-qt
         inkscape
-        hmcl
 
         chromium
+      ];
+
+      plasma6.excludePackages = with pkgs.kdePackages; [
+        dolphin
+        konsole
+        kate
       ];
 
       variables = {

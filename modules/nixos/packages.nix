@@ -51,7 +51,6 @@
     xdg-utils
     desktop-file-utils
     tealdeer
-    lazygit
     lftp
     clock-rs
     trashy
