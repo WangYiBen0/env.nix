@@ -57,6 +57,29 @@ stdenv.mkDerivation (finalAttrs: {
       --replace-fail \
       "addon.requireBuiltin(" \
       "requireBuiltin("
+
+    # ── NixOS: the PTY backend hardcodes /bin/bash ──────────────────────────
+    # terminal-bash's DEFAULT_BASH_SHELL is the literal "/bin/bash". NixOS has
+    # no /bin/bash (only /bin/sh), so the persistent-shell PTY dies instantly
+    # and tool-bash-persistent reports "PTY shell exited during startup". The
+    # PTY execs argv[0] directly and never falls back to a PATH lookup, so the
+    # default has to be the unmerged-usr name bash actually lives under.
+    #
+    # Only src/ is patched. The emitted lib/ (the tsdown bundle that is the
+    # package "main", plus the tsc output) does NOT exist at patchPhase — it is
+    # generated later by pnpmBuildHook, so patching it here aborts the build
+    # with "file does not exist". No post-build fixup is needed in turn:
+    # `build:lib:host` runs `tsc -b` then tsdown, both regenerating from src/,
+    # so this one edit propagates into every emitted copy. Verified in the
+    # built store output (lib/index.js, lib/types/config.js, lib/types/config.d.ts).
+    bash_shell_path=/run/current-system/sw/bin/bash
+
+    substituteInPlace packages/terminal/terminal-bash/src/config.ts \
+      --replace-fail "export const DEFAULT_BASH_SHELL = '/bin/bash'" \
+        "export const DEFAULT_BASH_SHELL = '$bash_shell_path'"
+
+    grep -q "DEFAULT_BASH_SHELL = '$bash_shell_path'" \
+      packages/terminal/terminal-bash/src/config.ts
   '';
 
   nativeBuildInputs = [
