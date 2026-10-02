@@ -16,8 +16,13 @@ forAllSystems (
   in
   {
     inherit (allPackages.fonts) lxgw-neozhisong lxgw-zhenkai zhuque-fangsong;
-    inherit (allPackages.agents) miyu deepseek-harness dsh-tui;
-    inherit (allPackages.applications) dingtalk cele-mod loenn;
+    inherit (allPackages.agents) deepseek-harness dsh-tui miyu;
+    inherit (allPackages.applications)
+      cele-mod
+      dingtalk
+      linuxqq
+      loenn
+      ;
     inherit (pkgsFor system) niri xwayland-satellite;
   }
 )

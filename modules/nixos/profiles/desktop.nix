@@ -37,7 +37,7 @@
 
     environment = {
       systemPackages = with pkgs; [
-        qq
+        linuxqq
         dingtalk
         telegram-desktop
 
