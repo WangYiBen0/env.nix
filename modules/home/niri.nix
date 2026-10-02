@@ -103,6 +103,18 @@ lib.mkIf config.machine.modules.niri.enable {
           ];
         }
         {
+          # QQ screenshot
+          window-rule._children = [
+            {
+              match._props = {
+                app-id = "^QQ$";
+                title = "^$";
+              };
+            }
+            { open-fullscreen = true; }
+          ];
+        }
+        {
           window-rule._children = [
             {
               geometry-corner-radius = [
