@@ -53,6 +53,10 @@ honk resolves `include` against the canonical path of its config file, which
 breaks for NixOS's `/nix/store` symlinks, so everything lives in one file.
 honk reads its config once at startup, so the file is embedded in the unit as
 a restart trigger — `nixos-rebuild switch` restarts honk whenever it changes.
+`settings` also pins `global.nfqueue_enable: false`; when NFQUEUE is
+unavailable honk downgrades the key in the running config but not in the file,
+and that restart-required drift makes every managed config write (adding a
+subscription in the UI, saving) fail with 422 "Configuration validation failed".
 
 honk needs Linux 6.12+, a bpffs mount at `/sys/fs/bpf`, and runs as root.
 Reach the UI from another machine by setting `api.listen` to a LAN address.

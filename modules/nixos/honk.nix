@@ -32,10 +32,18 @@ in
   options.machine.modules.honk = {
     settings = lib.mkOption {
       type = lib.types.lines;
+      # nfqueue_enable is pinned instead of left at honk's default: when the
+      # NFQUEUE netlink family is unavailable, honk downgrades the key in the
+      # running config at startup but leaves the file at `true`. That drift is
+      # restart-required, so every managed config write (adding a subscription
+      # in doona, saving) is then rejected with 422 "Configuration validation
+      # failed". Staging cannot work on this machine anyway; pinning the file
+      # to the value honk actually runs with removes the drift.
       default = ''
         global {
             wan_interface: auto
             data_dir: '/var/lib/honk'
+            nfqueue_enable: false
         }
 
         routing {
