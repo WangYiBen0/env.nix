@@ -48,7 +48,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
     inherit (finalAttrs) pname version src;
     sourceRoot = "${finalAttrs.src.name}/src/celemod-ui";
     fetcherVersion = 4;
-    hash = "sha256-YRVBPsBcupf/AtjH6E8uhlUEJsaeKuDuOqdqlwNMPrw=";
+    hash = "sha256-fGsindZv1KOLPD4zCh42++RiXgA3jmsUBWbq++0YNZw=";
   };
 
   pnpmRoot = "src/celemod-ui";
