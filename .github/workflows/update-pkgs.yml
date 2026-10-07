@@ -46,25 +46,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Update flake inputs
-        id: lock
-        env:
-          NIXPKGS_ALLOW_UNFREE: "1"
+      # Shared by the hash-repair and update steps: every package defined in
+      # this flake together with its package.nix, one per line. Only packages
+      # defined within this flake can be updated; packages exposed from
+      # nixpkgs/other flakes are skipped.
+      - name: Prepare package list
         run: |
-          nix flake update
-          if ! git diff --quiet; then
-            git add --all
-            git commit --message "chore(flake): update flake.lock"
-            echo "updated=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Update pkgs
-        id: pkgs
-        env:
-          NIXPKGS_ALLOW_UNFREE: "1"
-        run: |
-          # Only update packages defined within this flake; packages exposed
-          # from nixpkgs/other flakes cannot be updated by nix-update.
           cat > "$RUNNER_TEMP/update-expr.nix" <<'EOF'
           let
             flake = builtins.getFlake (toString ./.);
@@ -91,6 +78,87 @@ jobs:
           )
           EOF
 
+      - name: Update flake inputs
+        id: lock
+        env:
+          NIXPKGS_ALLOW_UNFREE: "1"
+        run: |
+          nix flake update
+          if ! git diff --quiet; then
+            git add --all
+            git commit --message "chore(flake): update flake.lock"
+            echo "updated=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # A nixpkgs bump can change a fetcher's output (cargo vendor layout,
+      # pnpm store, ...) while upstream sources stay the same, which leaves
+      # the hashes pinned in pkgs/ stale; CI would then fail with a hash
+      # mismatch without any package actually changing. Rebuild every package
+      # local to this flake and patch fixed-output mismatches in place, so the
+      # CI triggered at the end of this workflow does not fail on them.
+      - name: Repair fetch hashes
+        if: steps.lock.outputs.updated == 'true'
+        env:
+          NIXPKGS_ALLOW_UNFREE: "1"
+        run: |
+          cat > "$RUNNER_TEMP/repair-hashes.sh" <<'EOF'
+          set -euo pipefail
+          packages=$(nix eval --raw --impure --expr "$(cat "$RUNNER_TEMP/update-expr.nix")")
+          mapfile -t packages <<<"$packages"
+          echo "Packages to check: ${packages[*]}"
+
+          changed=()
+          for entry in "${packages[@]}"; do
+            read -r pkg file <<<"$entry"
+            echo "==> Checking $pkg ($file)"
+            errf=$(mktemp)
+            # Fetches run before compilation, so a non-hash failure here means
+            # every fixed-output of this package already verified.
+            for _ in 1 2 3 4 5 6 7 8; do
+              if nix build --no-link ".#packages.x86_64-linux.$pkg" 2>"$errf"; then
+                break
+              fi
+              if ! grep -q "hash mismatch in fixed-output derivation" "$errf"; then
+                echo "::warning::nix build failed for $pkg without a hash mismatch; leaving it to CI"
+                cat "$errf"
+                break
+              fi
+              specified=$(awk '/^[[:space:]]*specified:/{print $2; exit}' "$errf")
+              got=$(awk '/^[[:space:]]*got:/{print $2; exit}' "$errf")
+              if [[ "$specified" != sha256-* || "$got" != sha256-* ]]; then
+                echo "::error::cannot parse the hash mismatch for $pkg; failing so it is not silently skipped"
+                cat "$errf"
+                rm -f "$errf"
+                exit 1
+              fi
+              if ! grep -qF -- "$specified" "$file"; then
+                echo "::error::$specified is not pinned in $file; cannot repair $pkg"
+                rm -f "$errf"
+                exit 1
+              fi
+              echo "    $specified -> $got"
+              sed -i "s|$specified|$got|" "$file"
+            done
+            rm -f "$errf"
+            if ! git diff --quiet -- "$file"; then
+              changed+=("$pkg")
+            fi
+          done
+
+          if [ ${#changed[@]} -gt 0 ]; then
+            git add --all
+            git commit --message "fix(pkgs): refresh fetch hashes for the new flake.lock (${changed[*]})"
+          fi
+          EOF
+
+          nix develop --command bash "$RUNNER_TEMP/repair-hashes.sh"
+
+      - name: Update pkgs
+        id: pkgs
+        env:
+          NIXPKGS_ALLOW_UNFREE: "1"
+        run: |
+          # The package list is written by the "Prepare package list" step.
           # nix-update exits non-zero via an uncaught VersionError when the
           # newest release is unstable but --version=unstable is not requested;
           # treat that like "no update" instead of failing the run.
