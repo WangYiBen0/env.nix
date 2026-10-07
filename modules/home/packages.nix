@@ -1,6 +1,8 @@
 { pkgs, ... }: {
   home.packages = with pkgs; [
     progress
+    qrtool
+    cloudflared
   ];
 
   programs = {

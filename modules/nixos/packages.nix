@@ -37,6 +37,7 @@
     duf
     brightnessctl
     yazi
+    exiftool
     ripgrep
     zellij
     fzf
