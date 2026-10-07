@@ -16,7 +16,7 @@
       directory.enable = lib.mkEnableOption "XDG user directories";
       variable.enable = lib.mkEnableOption "desktop environment variables";
       compat.enable = lib.mkEnableOption "compatibility tools (nix-ld, flatpak, etc.)";
-      dae.enable = lib.mkEnableOption "dae network proxy";
+      honk.enable = lib.mkEnableOption "honk network proxy";
     };
   };
 }

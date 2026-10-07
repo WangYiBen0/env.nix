@@ -42,6 +42,9 @@ pkgs/
 │   ├── lxgw-neozhisong/   # LXGW Neo ZhiSong
 │   ├── lxgw-zhenkai/      # LXGW ZhenKai GB
 │   └── zhuque-fangsong/   # Zhuque FangSong
+├── networking/
+│   ├── honk/              # honk transparent proxy engine
+│   └── doona/             # doona web UI for honk
 └── agent/
     └── miyu/              # Miyu AI agent
 ```
@@ -88,7 +91,6 @@ The build system auto-discovers hosts, architectures, and users via `lib.scanNix
 | `home-manager`       | User environment manager                     |
 | `apple-fonts`        | SF Pro, SF Mono, New York                    |
 | `catppuccin`         | Catppuccin theme suite                       |
-| `daeuniverse`        | dae proxy                                    |
 | `disko`              | Declarative disk partitioning                |
 | `haumea`             | Filesystem-based module system               |
 | `niri`               | Niri Wayland compositor                      |

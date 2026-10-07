@@ -42,15 +42,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    daeuniverse = {
-      # url = "github:daeuniverse/flake.nix";
-      url = "github:WangYiBen0/dae.nix"; # my own github:daeuniverse/flake.nix fork
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        flake-parts.follows = "flake-parts";
-      };
-    };
-
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";

@@ -15,4 +15,5 @@ allPackages
     loenn
     linuxqq
     ;
+  inherit (allPackages.networking) doona honk;
 }

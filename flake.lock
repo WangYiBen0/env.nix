@@ -97,29 +97,6 @@
         "type": "github"
       }
     },
-    "daeuniverse": {
-      "inputs": {
-        "flake-parts": [
-          "flake-parts"
-        ],
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1787242617,
-        "narHash": "sha256-psacJXxzbEL7uBCYbdJF7Hpx39EE11G7/8/S8KO2kT4=",
-        "owner": "WangYiBen0",
-        "repo": "dae.nix",
-        "rev": "f2fef5e6ff625c2633dbbdccab265ae123a6d484",
-        "type": "github"
-      },
-      "original": {
-        "owner": "WangYiBen0",
-        "repo": "dae.nix",
-        "type": "github"
-      }
-    },
     "disko": {
       "inputs": {
         "nixpkgs": [
@@ -490,7 +467,6 @@
       "inputs": {
         "apple-fonts": "apple-fonts",
         "catppuccin": "catppuccin",
-        "daeuniverse": "daeuniverse",
         "disko": "disko",
         "flake-compat": "flake-compat",
         "flake-parts": "flake-parts",

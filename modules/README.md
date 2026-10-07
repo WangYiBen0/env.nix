@@ -30,11 +30,32 @@ All `machine.*` options are defined in `modules/common/options.nix` (single sour
 
 ### NixOS Modules
 
-| Module | Option                          | Description                                           |
-| ------ | ------------------------------- | ----------------------------------------------------- |
-| font   | `machine.modules.font.enable`   | System fonts (Noto, Maple Mono, JetBrains Mono, etc.) |
-| compat | `machine.modules.compat.enable` | nix-ld, flatpak, podman, Wine                         |
-| dae    | `machine.modules.dae.enable`    | dae/dae proxy                                         |
+| Module | Option                          | Description                                        |
+| ------ | ------------------------------- | -------------------------------------------------- |
+| font   | `machine.modules.font.enable`   | System fonts (Noto, Maple Mono, JetBrains Mono, …) |
+| compat | `machine.modules.compat.enable` | nix-ld, flatpak, podman, Wine                      |
+| honk   | `machine.modules.honk.enable`   | honk transparent proxy + doona web UI              |
+
+#### honk options
+
+| Option             | Default              | Description                                                              |
+| ------------------ | -------------------- | ------------------------------------------------------------------------ |
+| `settings`         | direct-only fallback | honk's main config in dae syntax, written to `/etc/honk/config.dae`      |
+| `api.listen`       | `127.0.0.1:9527`     | Native API and doona UI bind address                                     |
+| `api.port`         | `9527`               | Port opened in the firewall                                              |
+| `api.passwordAuth` | `true`               | Sign in with an administrator account (mutually exclusive with `secret`) |
+| `api.secret`       | `null`               | API token instead of password login                                      |
+| `api.configWrite`  | `true`               | Let the UI edit nodes, subscriptions and rules                           |
+
+The `experimental.native_api` block is appended to the main config from the
+`api.*` options; honk serves doona from the package's `share/doona` at `/ui/`.
+honk resolves `include` against the canonical path of its config file, which
+breaks for NixOS's `/nix/store` symlinks, so everything lives in one file.
+honk reads its config once at startup, so the file is embedded in the unit as
+a restart trigger — `nixos-rebuild switch` restarts honk whenever it changes.
+
+honk needs Linux 6.12+, a bpffs mount at `/sys/fs/bpf`, and runs as root.
+Reach the UI from another machine by setting `api.listen` to a LAN address.
 
 ### Home Manager Modules
 
@@ -69,7 +90,7 @@ modules/
 │   ├── system.nix            # Networking, timezone, locale, boot
 │   ├── packages.nix          # System packages
 │   ├── services.nix          # PipeWire, SSH, Bluetooth, firewall
-│   ├── dae.nix               # dae/dae proxy (gated: machine.modules.dae.enable)
+│   ├── honk.nix              # honk proxy + doona web UI (gated: machine.modules.honk.enable)
 │   ├── compat.nix            # nix-ld, flatpak, podman, Wine (gated: machine.modules.compat.enable)
 │   ├── font.nix              # System fonts (gated: machine.modules.font.enable)
 │   └── profiles/

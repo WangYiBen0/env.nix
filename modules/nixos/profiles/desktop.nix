@@ -10,7 +10,7 @@
       niri.enable = true;
       font.enable = true;
       compat.enable = true;
-      dae.enable = true;
+      honk.enable = true;
     };
 
     services = {
