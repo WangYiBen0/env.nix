@@ -10,14 +10,14 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "dsh-tui";
-  version = "0.13.0";
+  version = "0.14.0";
 
   strictDeps = true;
   __structuredAttrs = true;
 
   src = fetchzip {
     url = "https://registry.npmjs.org/@deepseek-harness-tui/dsh-tui/-/dsh-tui-${finalAttrs.version}.tgz";
-    hash = "sha256-1LIovT0pYzKn0hCkoWJdaaQzh3k+M/xSFgQSjPXVUS4=";
+    hash = "sha256-Iz1wGP8oDExepjwcW7Pd2qHIu+acik6kOd3xbmiEg5U=";
   };
 
   # The published tarball is a launcher plus a TUI that gets installed into the
