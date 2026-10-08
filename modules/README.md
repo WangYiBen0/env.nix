@@ -40,7 +40,7 @@ All `machine.*` options are defined in `modules/common/options.nix` (single sour
 
 | Option             | Default              | Description                                                              |
 | ------------------ | -------------------- | ------------------------------------------------------------------------ |
-| `settings`         | direct-only fallback | honk's main config in dae syntax, written to `/etc/honk/config.dae`      |
+| `settings`         | direct-only fallback | honk's base config in dae syntax, installed to `/var/lib/honk/base.dae`  |
 | `api.listen`       | `127.0.0.1:9527`     | Native API and doona UI bind address                                     |
 | `api.port`         | `9527`               | Port opened in the firewall                                              |
 | `api.passwordAuth` | `true`               | Sign in with an administrator account (mutually exclusive with `secret`) |

@@ -8,10 +8,11 @@
 let
   cfg = config.machine.modules.honk;
 
-  # The native API block is rendered as plain text and appended to the main
-  # config instead of living in config.d/: honk resolves `include` against the
-  # *canonical* path of the config file, and /etc/honk/config.dae is a symlink
-  # into /nix/store, so a sibling config.d/ would silently never match.
+  # Native API block appended to the Nix-owned base config. The UI edits
+  # /var/lib/honk/config.dae (an entry file) which `include`s 'base.dae'; the
+  # entry lives in a writable directory so the config coordinator can write to
+  # it (fixes 503 "Configuration coordinator is unavailable" when writing
+  # through a symlink into /nix/store).
   apiConfigText = ''
     experimental {
         native_api {
@@ -25,7 +26,8 @@ let
     }
   '';
 
-  mainConfig = pkgs.writeText "honk-config.dae" (cfg.settings + "\n" + apiConfigText);
+  baseConfig = pkgs.writeText "honk-base.dae" (cfg.settings + "\n" + apiConfigText);
+  entrySeed = pkgs.writeText "honk-entry.dae" "include {\n    'base.dae'\n}\n";
 in
 {
   # `enable` lives in modules/common/options.nix, alongside every other module.
@@ -57,8 +59,11 @@ in
         }
       '';
       description = ''
-        honk's main configuration file, in dae syntax. Written to
-        `/etc/honk/config.dae`. Nodes, groups, routing and DNS go here.
+        honk's base configuration in dae syntax (Nix-owned). Rendered to
+        `/var/lib/honk/base.dae` and force-installed on each honk start.
+        Nodes, groups, routing and DNS go here. The doona UI writes to
+        `/var/lib/honk/config.dae` (entry file that `include`s base) so it
+        survives rebuilds.
       '';
     };
 
@@ -118,22 +123,33 @@ in
 
     environment = {
       systemPackages = [ pkgs.doona ];
-
-      etc."honk/config.dae".source = mainConfig;
     };
 
+    # Seed the UI-writable entry file once. It only contains `include`, so
+    # rebuilds never need to touch it again: honk appends subscription/node
+    # edits made in doona directly into this file, and it survives rebuilds
+    # because it lives outside /nix/store.
+    system.activationScripts.honkEntry = lib.stringAfter [ "etc" ] ''
+      mkdir -p /var/lib/honk
+      chmod 0700 /var/lib/honk
+      if [ ! -e /var/lib/honk/config.dae ]; then
+        install -m 0600 ${entrySeed} /var/lib/honk/config.dae
+      fi
+    '';
+
     systemd = {
-      # honk needs the config directory and data directory writable by root only.
+      # honk needs the data directory writable by root only.
       tmpfiles.rules = [
-        "d /etc/honk 0700 root root -"
         "d /var/lib/honk 0700 root root -"
       ];
 
       # honk runs as root: it attaches eBPF programs, creates the dae0 link and
       # the daens namespace, and adjusts sysctls. honk reads its config once at
-      # startup, so a plain /etc change would never reach the running instance;
-      # embedding the config hash in the unit makes nixos-rebuild restart honk
-      # whenever the configuration changes.
+      # startup, so a plain file change would never reach the running instance;
+      # embedding the base config hash in the unit makes nixos-rebuild restart
+      # honk whenever the Nix-owned configuration changes. ExecStartPre
+      # force-installs base.dae (the store copy is the truth for the
+      # declarative half) while config.dae stays UI-owned and untouched.
       services.honk = {
         description = "honk transparent proxy engine";
         documentation = [ "https://github.com/daeuniverse/honk" ];
@@ -141,7 +157,7 @@ in
         after = [ "network-online.target" ];
         wants = [ "network-online.target" ];
 
-        restartTriggers = [ mainConfig ];
+        restartTriggers = [ baseConfig ];
 
         # honk pins eBPF maps under /sys/fs/bpf.
         unitConfig.RequiresMountsFor = [
@@ -151,7 +167,8 @@ in
 
         serviceConfig = {
           Type = "notify";
-          ExecStart = lib.getExe pkgs.honk;
+          ExecStart = "${lib.getExe pkgs.honk} -c /var/lib/honk/config.dae";
+          ExecStartPre = "${pkgs.coreutils}/bin/install -m 0600 ${baseConfig} /var/lib/honk/base.dae";
           ExecReload = "${pkgs.honk}/bin/honk-core reload";
           Restart = "on-failure";
           RestartSec = "2s";
