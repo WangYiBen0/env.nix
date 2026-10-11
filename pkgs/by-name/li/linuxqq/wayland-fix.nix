@@ -53,8 +53,6 @@ stdenv.mkDerivation (finalAttrs: {
 
   enableParallelBuilding = true;
 
-  doCheck = false;
-
   # The upstream Makefile bakes the absolute library directory into the
   # launcher script (`@LIBEXECDIR@` -> `LIBDIR`) via `sed`, and `$out` is only
   # known inside the sandbox.  Exporting these from bash -- rather than via
@@ -79,7 +77,7 @@ stdenv.mkDerivation (finalAttrs: {
     # rewrite it once wrapProgram has moved the script aside, and `/bin/bash`
     # does not exist in a Nix store, so point it at the stdenv bash explicitly.
     substituteInPlace "$out/bin/${finalAttrs.pname}" \
-      --replace '#!/bin/bash' "#!${bash}/bin/bash"
+      --replace-fail '#!/bin/bash' "#!${bash}/bin/bash"
 
     runHook postInstall
   '';

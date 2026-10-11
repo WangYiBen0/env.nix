@@ -8,6 +8,7 @@
   callPackage,
   makeDesktopItem,
   copyDesktopItems,
+  writeShellScript,
   prelink,
   coreutils,
   perl,
@@ -92,12 +93,12 @@
 let
   # DingTalk still ships binaries that link against OpenSSL 1.1.1.  The
   # nixpkgs attribute has been removed, so build the legacy version locally.
-  openssl_1_1 = stdenv.mkDerivation rec {
+  openssl_1_1 = stdenv.mkDerivation (finalAttrs: {
     pname = "openssl";
     version = "1.1.1w";
 
     src = fetchurl {
-      url = "https://github.com/openssl/openssl/releases/download/OpenSSL_1_1_1w/openssl-${version}.tar.gz";
+      url = "https://github.com/openssl/openssl/releases/download/OpenSSL_1_1_1w/openssl-${finalAttrs.version}.tar.gz";
       hash = "sha256-zzCYlQy02FOtlcCEHx+cbT3BAtzPys1SHZOSUgi3asg=";
     };
 
@@ -107,7 +108,7 @@ let
     ];
 
     configurePhase = ''
-      substituteInPlace config --replace "/usr/bin/env" "${coreutils}/bin/env"
+      substituteInPlace config --replace-fail "/usr/bin/env" "${coreutils}/bin/env"
       ./config \
         --prefix=$out \
         --openssldir=$out/etc/ssl \
@@ -127,22 +128,20 @@ let
       make install_sw
     '';
 
-    doCheck = false;
-
     meta = with lib; {
       description = "OpenSSL 1.1.1 - cryptography and SSL/TLS toolkit (legacy)";
       homepage = "https://www.openssl.org/";
       license = licenses.openssl;
       platforms = platforms.linux;
     };
-  };
+  });
 
   version = "8.2.8.260818002";
   arch = if stdenv.hostPlatform.isAarch64 then "arm64" else "amd64";
   url = "https://dtapp-pub.dingtalk.com/dingtalk-desktop/xc_dingtalk_update/linux_deb/Release/com.alibabainc.dingtalk_${version}_${arch}.deb";
   hash =
     if stdenv.hostPlatform.isAarch64 then
-      "sha256-placeholder-aarch64-hash"
+      "sha256-Iiaeqtql59q2okwcN7ryxFpXIiGjg5qf9KSHB5gS2rw="
     else
       "sha256-iNrWB7u3pykYOZORydU67fz6Om2rAffQZZ5iwcoyZ48=";
 
@@ -242,7 +241,7 @@ let
     libxdmcp
   ];
 in
-stdenv.mkDerivation (_finalAttrs: {
+stdenv.mkDerivation {
   pname = "dingtalk";
   inherit version src;
 
@@ -320,7 +319,7 @@ stdenv.mkDerivation (_finalAttrs: {
 
     # Icons
     install -Dm644 $out/lib/Resources/image/common/about/logo.png $out/share/pixmaps/dingtalk.png
-    cp logo.ico $out/share/pixmaps/dingtalk.ico
+    install -Dm644 logo.ico $out/share/pixmaps/dingtalk.ico
 
     runHook postInstall
   '';
@@ -333,7 +332,68 @@ stdenv.mkDerivation (_finalAttrs: {
 
   passthru = {
     inherit dingtalk-wayland-screenshare;
-    updateScript = ./update.sh;
+    # The DingTalk download page redirects to the actual .deb URL:
+    #   https://www.dingtalk.com/win/d/qd=linux_amd64  ->  302 to .deb
+    # and the Location header encodes the version in the filename.
+    updateScript = writeShellScript "update-dingtalk" ''
+      set -euo pipefail
+
+      expr=pkgs/by-name/di/dingtalk/package.nix
+      [ -f "$expr" ] || { echo "run this from the flake root" >&2; exit 1; }
+
+      echo ">> querying latest dingtalk version from dingtalk.com ..."
+
+      tmpdir=$(mktemp -d)
+      trap 'rm -rf "$tmpdir"' EXIT
+
+      # Dump headers only, then take the final Location after all redirects.
+      curl -sS -D "$tmpdir/headers" -o /dev/null \
+        'https://www.dingtalk.com/win/d/qd=linux_amd64'
+
+      deb_url=$(
+        grep -i '^location:' "$tmpdir/headers" |
+          tail -1 |
+          sed 's/^[^:]*:[[:space:]]*//' |
+          tr -d '\r\n'
+      )
+      [ -n "$deb_url" ] || { echo "error: could not determine latest download URL" >&2; exit 1; }
+
+      file=$(basename "$deb_url")
+      version=$(printf '%s' "$file" | sed -n 's/^com\.alibabainc\.dingtalk_\(.*\)_amd64\.deb$/\1/p')
+      [ -n "$version" ] || { echo "error: could not parse version from URL: $deb_url" >&2; exit 1; }
+
+      echo ">> latest version: $version"
+
+      current=$(sed -n 's/^  version = "\(.*\)";$/\1/p' "$expr")
+      if [ "$version" = "$current" ]; then
+        echo "already at $version, nothing to do"
+        exit 0
+      fi
+      echo ">> updating $current -> $version"
+
+      # Prefetch the amd64 .deb so we can pin its hash.
+      echo ">> prefetching amd64 .deb to compute hash ..."
+      hash=$(
+        nix store prefetch-file --json \
+          --name "com.alibabainc.dingtalk_''${version}_amd64.deb" \
+          "$deb_url" |
+          jq -r '.hash'
+      )
+      [ -n "$hash" ] && [ "$hash" != "null" ] || {
+        echo "error: failed to compute hash for $deb_url" >&2
+        exit 1
+      }
+      echo ">> hash: $hash"
+
+      # Only replace a real SRI hash (ends with '=') so the aarch64
+      # placeholder stays untouched.
+      sed -i \
+        -e "s|version = \".*\";|version = \"$version\";|" \
+        -e "s|\"sha256-[^\"]*=\";|\"$hash\";|" \
+        "$expr"
+
+      echo ">> updated $current -> $version (hash: $hash)"
+    '';
   };
 
   desktopItems = [
@@ -367,7 +427,7 @@ stdenv.mkDerivation (_finalAttrs: {
       "aarch64-linux"
     ];
     license = licenses.unfree;
-    sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
+    sourceProvenance = [ sourceTypes.binaryNativeCode ];
     mainProgram = "dingtalk";
   };
-})
+}

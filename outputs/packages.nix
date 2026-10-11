@@ -1,5 +1,5 @@
 {
-  nixpkgs,
+  myLib,
   pkgsFor,
   forAllSystems,
   ...
@@ -9,20 +9,10 @@ forAllSystems (
   system:
   let
     pkgs = pkgsFor system;
-    allPackages = nixpkgs.lib.filesystem.packagesFromDirectoryRecursive {
+    selfPackages = myLib.packagesFromByName {
       inherit (pkgs) callPackage;
-      directory = ../pkgs;
+      directory = ../pkgs/by-name;
     };
   in
-  {
-    inherit (allPackages.fonts) lxgw-neozhisong lxgw-zhenkai zhuque-fangsong;
-    inherit (allPackages.agents) deepseek-harness dsh-tui miyu;
-    inherit (allPackages.applications)
-      cele-mod
-      dingtalk
-      linuxqq
-      loenn
-      ;
-    inherit (pkgsFor system) niri xwayland-satellite;
-  }
+  selfPackages // { inherit (pkgsFor system) niri xwayland-satellite; }
 )

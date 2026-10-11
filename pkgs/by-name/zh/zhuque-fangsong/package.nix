@@ -1,6 +1,7 @@
 {
   lib,
   fetchzip,
+  nix-update-script,
   stdenvNoCC,
 }:
 
@@ -21,6 +22,8 @@ stdenvNoCC.mkDerivation (finalAttrs: {
 
     runHook postInstall
   '';
+
+  passthru.updateScript = nix-update-script { };
 
   meta = {
     description = "An open-source Fangsong typeface project";

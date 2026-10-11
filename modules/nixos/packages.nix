@@ -21,6 +21,7 @@
     _7zz
     ntfsprogs-plus
     exfatprogs
+    pciutils
 
     # utils
     fastfetch

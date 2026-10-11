@@ -4,6 +4,7 @@
   bubblewrap,
   fetchzip,
   makeBinaryWrapper,
+  nix-update-script,
   nodejs_24,
   pnpm_11,
 }:
@@ -36,9 +37,8 @@ stdenv.mkDerivation (finalAttrs: {
   installPhase = ''
     runHook preInstall
 
-    mkdir -p $out/bin $out/libexec/dsh-tui/bin
-    install -m644 bin/dsh-tui.js $out/libexec/dsh-tui/bin/dsh-tui.js
-    install -m644 package.json $out/libexec/dsh-tui/package.json
+    install -Dm644 bin/dsh-tui.js $out/libexec/dsh-tui/bin/dsh-tui.js
+    install -Dm644 package.json $out/libexec/dsh-tui/package.json
 
     makeBinaryWrapper ${nodejs_24}/bin/node $out/bin/dsh-tui \
       --add-flags "$out/libexec/dsh-tui/bin/dsh-tui.js" \
@@ -61,6 +61,8 @@ stdenv.mkDerivation (finalAttrs: {
     $out/bin/dsh-tui help >/dev/null
     $out/bin/dst help >/dev/null
   '';
+
+  passthru.updateScript = nix-update-script { };
 
   meta = with lib; {
     description = "Terminal UI launcher for DeepSeek Harness";

@@ -19,7 +19,10 @@
 }:
 let
   pname = "dingtalk-wayland-screenshare";
-  version = "e15063310eb3251e4619345c8fad0059e8a0558a";
+  # Untagged upstream commit; bump `rev` together with its date-based
+  # version below (nix-update cannot track this repository).
+  rev = "e15063310eb3251e4619345c8fad0059e8a0558a";
+  version = "0-unstable-2025-03-21";
 in
 stdenv.mkDerivation {
   inherit pname version;
@@ -27,7 +30,7 @@ stdenv.mkDerivation {
   src = fetchFromGitHub {
     owner = "lzl200110";
     repo = "dingtalk-wayland-screenshare";
-    rev = version;
+    inherit rev;
     fetchSubmodules = true;
     hash = "sha256-yCTb1gy6gzy1WzcetrRAsoG77ST1yf+zKtTD3fojKRw=";
   };
@@ -58,8 +61,7 @@ stdenv.mkDerivation {
   installPhase = ''
     runHook preInstall
 
-    mkdir -p $out/lib
-    cp libdingtalkhook.so $out/lib/
+    install -Dm755 libdingtalkhook.so $out/lib/libdingtalkhook.so
 
     runHook postInstall
   '';
@@ -68,6 +70,6 @@ stdenv.mkDerivation {
     description = "DingTalk screen sharing implementation under Wayland";
     homepage = "https://github.com/lzl200110/dingtalk-wayland-screenshare";
     license = lib.licenses.mit;
-    mainProgram = "dingtalk";
+    platforms = lib.platforms.linux;
   };
 }

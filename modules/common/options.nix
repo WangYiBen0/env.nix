@@ -17,6 +17,7 @@
       variable.enable = lib.mkEnableOption "desktop environment variables";
       compat.enable = lib.mkEnableOption "compatibility tools (nix-ld, flatpak, etc.)";
       honk.enable = lib.mkEnableOption "honk network proxy";
+      deepseek-harness.enable = lib.mkEnableOption "deepseek-harness web UI service";
     };
   };
 }

@@ -1,19 +1,8 @@
-_inputs: _final: prev:
+inputs: _final: prev:
 let
-  allPackages = prev.lib.filesystem.packagesFromDirectoryRecursive {
-    inherit (prev) callPackage;
-    directory = ../pkgs;
-  };
+  myLib = import ../lib/default.nix inputs.nixpkgs.lib;
 in
-allPackages
-// {
-  inherit (allPackages.fonts) lxgw-neozhisong lxgw-zhenkai zhuque-fangsong;
-  inherit (allPackages.agents) deepseek-harness dsh-tui miyu;
-  inherit (allPackages.applications)
-    cele-mod
-    dingtalk
-    loenn
-    linuxqq
-    ;
-  inherit (allPackages.networking) doona honk;
+myLib.packagesFromByName {
+  inherit (prev) callPackage;
+  directory = ../pkgs/by-name;
 }

@@ -26,8 +26,14 @@ let
     }
   '';
 
-  baseConfig = pkgs.writeText "honk-base.dae" (cfg.settings + "\n" + apiConfigText);
-  entrySeed = pkgs.writeText "honk-entry.dae" "include {\n    'base.dae'\n}\n";
+  # base.dae: user-tunable settings + routing, seeded once so routing edits
+  # made in doona survive restarts. api.dae: the native_api block, owned by
+  # Nix and reinstalled on every start. doona refuses to edit any file that
+  # contains native_api or clash_api, so the API block must live in its own
+  # include file or the UI's simple-mode rule editing stays disabled.
+  baseConfig = pkgs.writeText "honk-base.dae" cfg.settings;
+  apiConfig = pkgs.writeText "honk-api.dae" apiConfigText;
+  entrySeed = pkgs.writeText "honk-entry.dae" "include {\n    'base.dae'\n}\ninclude {\n    'api.dae'\n}\n";
 in
 {
   # `enable` lives in modules/common/options.nix, alongside every other module.
@@ -60,10 +66,11 @@ in
       '';
       description = ''
         honk's base configuration in dae syntax (Nix-owned). Rendered to
-        `/var/lib/honk/base.dae` and force-installed on each honk start.
-        Nodes, groups, routing and DNS go here. The doona UI writes to
-        `/var/lib/honk/config.dae` (entry file that `include`s base) so it
-        survives rebuilds.
+        `/var/lib/honk/base.dae` and seeded there once; delete
+        `/var/lib/honk/.base-seeded` to re-seed from a later rebuild. Nodes,
+        groups, routing and DNS go here, edited through the doona UI; the
+        control plane (native_api) lives separately in `api.dae` so doona
+        is allowed to rewrite this file.
       '';
     };
 
@@ -122,20 +129,13 @@ in
     ];
 
     environment = {
-      systemPackages = [ pkgs.doona ];
+      # doona is the web UI; pkgs.honk provides the honk-core CLI (status,
+      # `honk-core reload`, debugging) for interactive use.
+      systemPackages = [
+        pkgs.doona
+        pkgs.honk
+      ];
     };
-
-    # Seed the UI-writable entry file once. It only contains `include`, so
-    # rebuilds never need to touch it again: honk appends subscription/node
-    # edits made in doona directly into this file, and it survives rebuilds
-    # because it lives outside /nix/store.
-    system.activationScripts.honkEntry = lib.stringAfter [ "etc" ] ''
-      mkdir -p /var/lib/honk
-      chmod 0700 /var/lib/honk
-      if [ ! -e /var/lib/honk/config.dae ]; then
-        install -m 0600 ${entrySeed} /var/lib/honk/config.dae
-      fi
-    '';
 
     systemd = {
       # honk needs the data directory writable by root only.
@@ -146,18 +146,24 @@ in
       # honk runs as root: it attaches eBPF programs, creates the dae0 link and
       # the daens namespace, and adjusts sysctls. honk reads its config once at
       # startup, so a plain file change would never reach the running instance;
-      # embedding the base config hash in the unit makes nixos-rebuild restart
-      # honk whenever the Nix-owned configuration changes. ExecStartPre
-      # force-installs base.dae (the store copy is the truth for the
-      # declarative half) while config.dae stays UI-owned and untouched.
-      services.honk = {
+      # embedding the config hashes in the unit makes nixos-rebuild restart
+      # honk whenever the Nix-owned configuration changes. File layout:
+      #   config.dae  entry, seeded once, UI-owned (subscriptions live here)
+      #   base.dae    seeded once, UI-editable settings + routing
+      #   api.dae     force-installed every start, Nix-owned control plane
+      services.honk-core = {
         description = "honk transparent proxy engine";
         documentation = [ "https://github.com/daeuniverse/honk" ];
+
+        wantedBy = [ "multi-user.target" ];
 
         after = [ "network-online.target" ];
         wants = [ "network-online.target" ];
 
-        restartTriggers = [ baseConfig ];
+        restartTriggers = [
+          baseConfig
+          apiConfig
+        ];
 
         # honk pins eBPF maps under /sys/fs/bpf.
         unitConfig.RequiresMountsFor = [
@@ -168,7 +174,33 @@ in
         serviceConfig = {
           Type = "notify";
           ExecStart = "${lib.getExe pkgs.honk} -c /var/lib/honk/config.dae";
-          ExecStartPre = "${pkgs.coreutils}/bin/install -m 0600 ${baseConfig} /var/lib/honk/base.dae";
+          ExecStartPre = pkgs.writeShellScript "honk-prestart" ''
+            set -eu
+            # The data directory can disappear under a live unit (state
+            # experiments, manual cleanup); recreate it here instead of
+            # wedging ExecStartPre on a missing parent directory.
+            mkdir -p /var/lib/honk
+
+            # Control plane: Nix owns it, reinstall unconditionally.
+            install -Dm0600 ${apiConfig} /var/lib/honk/api.dae
+
+            # base.dae and the entry file are seeded only once (or when
+            # missing) so doona's edits survive restarts. The first start
+            # with no marker replaces whatever is there — that one
+            # replacement doubles as the migration path from the old
+            # single-file layout.
+            if [ ! -e /var/lib/honk/.base-seeded ]; then
+              install -Dm0600 ${baseConfig} /var/lib/honk/base.dae
+              touch /var/lib/honk/.base-seeded
+            fi
+            if [ ! -e /var/lib/honk/config.dae ]; then
+              install -Dm0600 ${entrySeed} /var/lib/honk/config.dae
+            elif ! grep -q "'api.dae'" /var/lib/honk/config.dae; then
+              # Entries written by the old layout only include base.dae;
+              # honk accepts multiple include blocks, so append one.
+              printf "\ninclude {\n    'api.dae'\n}\n" >> /var/lib/honk/config.dae
+            fi
+          '';
           ExecReload = "${pkgs.honk}/bin/honk-core reload";
           Restart = "on-failure";
           RestartSec = "2s";

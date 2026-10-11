@@ -1,10 +1,10 @@
 {
   lib,
-  stdenv,
   rustPlatform,
   fetchFromGitHub,
   fetchPnpmDeps,
   cargo-tauri,
+  nix-update-script,
   nodejs,
   pnpm,
   pnpmConfigHook,
@@ -60,10 +60,10 @@ rustPlatform.buildRustPackage (finalAttrs: {
     pnpm
     pkg-config
     cmake
-  ]
-  ++ lib.optionals stdenv.hostPlatform.isLinux [ wrapGAppsHook4 ];
+    wrapGAppsHook4
+  ];
 
-  buildInputs = lib.optionals stdenv.hostPlatform.isLinux [
+  buildInputs = [
     glib-networking
     openssl
     webkitgtk_4_1
@@ -78,6 +78,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
     pnpm --dir src/celemod-ui build
   '';
 
+  # The cargo tests drive the tauri GUI.
   doCheck = false;
 
   env = {
@@ -87,12 +88,13 @@ rustPlatform.buildRustPackage (finalAttrs: {
     RUSTC_BOOTSTRAP = "1";
   };
 
+  passthru.updateScript = nix-update-script { };
+
   meta = {
     description = "CeleMod - An alternative mod manager for Celeste";
     homepage = "https://github.com/std-microblock/CeleMod";
     license = lib.licenses.gpl3Plus;
     platforms = [ "x86_64-linux" ];
-    sourceProvenance = with lib.sourceTypes; [ fromSource ];
     mainProgram = "cele-mod";
   };
 })

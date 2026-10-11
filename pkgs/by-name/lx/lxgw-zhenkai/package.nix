@@ -1,6 +1,7 @@
 {
   lib,
   fetchurl,
+  nix-update-script,
   stdenvNoCC,
 }:
 
@@ -22,6 +23,8 @@ stdenvNoCC.mkDerivation (finalAttrs: {
 
     runHook postInstall
   '';
+
+  passthru.updateScript = nix-update-script { };
 
   meta = {
     description = "A bolder weight, AI-assisted font derived from LXGW Wenkai";
