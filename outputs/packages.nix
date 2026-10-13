@@ -14,5 +14,15 @@ forAllSystems (
       directory = ../pkgs/by-name;
     };
   in
-  selfPackages // { inherit (pkgsFor system) niri xwayland-satellite; }
+  selfPackages
+  // {
+    inherit (pkgsFor system)
+      niri
+      xwayland-satellite
+      zen-browser
+      zen-browser-beta
+      zen-browser-twilight
+      osu-lazer-bin
+      ;
+  }
 )
