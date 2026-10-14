@@ -23,7 +23,16 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     runHook postInstall
   '';
 
-  passthru.updateScript = nix-update-script { };
+  passthru.updateScript = nix-update-script {
+    # Every upstream release is marked as a prerelease ("technical preview"),
+    # so the default stable strategy always raises VersionError; track the
+    # newest release explicitly.
+    extraArgs = [
+      "--flake"
+      "--version"
+      "unstable"
+    ];
+  };
 
   meta = {
     description = "An open-source Fangsong typeface project";

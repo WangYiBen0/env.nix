@@ -187,14 +187,19 @@ jobs:
             nu_py=$(head -n1 "$bindir/.nix-update-wrapped" | sed "s/^#!//")
             export PYTHONPATH="$(echo "$appdir"/lib/python*/site-packages)${PYTHONPATH:+:$PYTHONPATH}"
 
-            flag=0
             changed=()
+            failed=()
             for entry in "${packages[@]}"; do
               read -r pkg file <<<"$entry"
               echo "==> Updating $pkg ($file)"
               if ! "$nu_py" "$RUNNER_TEMP/nix-update-wrapper.py" --flake "$pkg" --override-filename "$file" --use-update-script; then
-                echo "error: nix-update failed for $pkg"
-                flag=1
+                # One broken package must not block the others or strand the
+                # updates that did succeed: undo any partial rewrite, warn,
+                # and keep going. The job is failed at the very end, after
+                # the Push step has run.
+                echo "::error title=nix-update failed::nix-update failed for $pkg"
+                git checkout -- "$file"
+                failed+=("$pkg")
               elif ! git diff --quiet; then
                 changed+=("$pkg")
                 git add --all
@@ -203,17 +208,25 @@ jobs:
 
             if [ ${#changed[@]} -gt 0 ]; then
               git commit --message "chore(pkgs): update ${changed[*]}"
-              printf "updated=true\nchanged=%s\n" "${changed[*]}" >> "$GITHUB_OUTPUT"
-            else
-              printf "updated=\n" >> "$GITHUB_OUTPUT"
             fi
-
-            exit "$flag"
+            {
+              echo "### Update pkgs"
+              if [ ${#changed[@]} -gt 0 ]; then
+                echo "- updated: ${changed[*]}"
+              fi
+              if [ ${#failed[@]} -gt 0 ]; then
+                echo "- failed: ${failed[*]}"
+              fi
+              if [ ${#changed[@]} -eq 0 ] && [ ${#failed[@]} -eq 0 ]; then
+                echo "- nothing to update"
+              fi
+            } >> "$GITHUB_STEP_SUMMARY"
+            printf "updated=%s\nfailed=%s\n" "${changed[*]:-}" "${failed[*]:-}" >> "$GITHUB_OUTPUT"
           '
 
       - name: Push
         id: push
-        if: steps.lock.outputs.updated == 'true' || steps.pkgs.outputs.updated == 'true'
+        if: steps.lock.outputs.updated == 'true' || steps.pkgs.outputs.updated != ''
         run: |
           git pull --rebase origin main
           git push origin main
@@ -226,3 +239,11 @@ jobs:
         run: gh workflow run ci.yml --ref main
         env:
           GH_TOKEN: ${{ github.token }}
+
+      # Failing here — after the Push step — makes the run red to flag the
+      # broken packages without stranding the updates that did succeed.
+      - name: Fail on update errors
+        if: steps.pkgs.outputs.failed != ''
+        run: |
+          echo "nix-update failed for: ${{ steps.pkgs.outputs.failed }}"
+          exit 1

@@ -88,7 +88,11 @@ rustPlatform.buildRustPackage (finalAttrs: {
     RUSTC_BOOTSTRAP = "1";
   };
 
-  passthru.updateScript = nix-update-script { };
+  passthru.updateScript = nix-update-script {
+    # The update script re-invokes nix-update without --flake, which cannot
+    # eval this flake; always point it back at the local flake.
+    extraArgs = [ "--flake" ];
+  };
 
   meta = {
     description = "CeleMod - An alternative mod manager for Celeste";
