@@ -1,16 +1,20 @@
 {
   lib,
   fetchurl,
+  nix-update-script,
   stdenvNoCC,
 }:
 
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "lxgw-zhenkai";
-  version = "0.825";
+  version = "0.827";
 
+  # Upstream discontinued the original (non-Slab) variants with v0.826 and
+  # only ships the Slab build since; this package tracks it.
+  # https://github.com/lxgw/LxgwZhenKai/releases/tag/v0.826
   src = fetchurl {
-    url = "https://github.com/lxgw/LxgwZhenKai/releases/download/v${finalAttrs.version}/LXGWZhenKaiGB-Regular.ttf";
-    hash = "sha256-QIdpAqfOJSaKtxCtj+bitjvAAqpLaNIv1F/BJDcmztU=";
+    url = "https://github.com/lxgw/LxgwZhenKai/releases/download/v${finalAttrs.version}/LXGWZhenKaiSlabGB-Regular.ttf";
+    hash = "sha256-v06ow5tReERpAgEgElcV0wdRNyM/4ze10Kcyf538A70=";
   };
 
   dontUnpack = true;
@@ -18,22 +22,19 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   installPhase = ''
     runHook preInstall
 
-    install -Dm644 $src $out/share/fonts/truetype/LXGWZhenKaiGB-Regular.ttf
+    install -Dm644 $src $out/share/fonts/truetype/LXGWZhenKaiSlabGB-Regular.ttf
 
     runHook postInstall
   '';
 
-  # Upstream discontinued the non-Slab variants with v0.826 and only ships
-  # the Slab build since; this package pins the last maintained release, so
-  # auto-updates are disabled.
-  # https://github.com/lxgw/LxgwZhenKai/releases/tag/v0.826
-  passthru.updateScript = [
-    "echo"
-    "lxgw-zhenkai: frozen at 0.825, upstream only ships the Slab build since v0.826"
-  ];
+  passthru.updateScript = nix-update-script {
+    # The update script re-invokes nix-update without --flake, which cannot
+    # eval this flake; always point it back at the local flake.
+    extraArgs = [ "--flake" ];
+  };
 
   meta = {
-    description = "A bolder weight, AI-assisted font derived from LXGW Wenkai";
+    description = "Slab variant of a bolder weight, AI-assisted font derived from LXGW Wenkai";
     homepage = "https://github.com/lxgw/LxgwZhenKai";
     license = lib.licenses.ofl;
     platforms = lib.platforms.all;

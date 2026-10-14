@@ -7,7 +7,6 @@
 | `nixosConfigurations.<host>`       | NixOS system configs (NixOS module HM included)                    |
 | `homeConfigurations.<user>@<host>` | Standalone HM configs (for debugging)                              |
 | `packages.<system>`                | Custom packages built from `pkgs/` (fonts, agent, etc.)            |
-| `packages.<system>.fonts.<name>`   | Font packages (alias: `packages.<system>.<name>`)                  |
 | `overlays.default`                 | Project overlay (adds custom packages to nixpkgs)                  |
 | `lib`                              | Custom lib (scanNixFiles, scanPackages, listSubDir, lastAfterDash) |
 | `formatter.<system>`               | nixfmt                                                             |
@@ -40,7 +39,7 @@ Custom packages live in `pkgs/` and are auto-discovered by `lib.scanPackages`:
 pkgs/
 ├── fonts/
 │   ├── lxgw-neozhisong/   # LXGW Neo ZhiSong
-│   ├── lxgw-zhenkai/      # LXGW ZhenKai GB
+│   ├── lxgw-zhenkai/      # LXGW ZhenKai Slab GB
 │   └── zhuque-fangsong/   # Zhuque FangSong
 ├── networking/
 │   ├── honk/              # honk transparent proxy engine
@@ -53,11 +52,10 @@ Build individual packages:
 
 ```bash
 nix build .#miyu                    # Build agent
-nix build .#fonts.lxgw-zhenkai      # Build font (namespaced)
-nix build .#lxgw-zhenkai            # Build font (top-level alias)
+nix build .#lxgw-zhenkai            # Build font
 ```
 
-The overlay (`overlays/packages.nix`) also makes these available system-wide via `pkgs.*` and `pkgs.fonts.*`.
+The overlay (`overlays/packages.nix`) also makes these available system-wide via `pkgs.*`.
 
 ## Overlays
 

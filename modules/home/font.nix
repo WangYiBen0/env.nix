@@ -125,14 +125,14 @@ lib.mkIf config.machine.modules.font.enable {
               <match target="pattern">
                 <test name="family" compare="contains"><string>楷体</string></test>
                 <edit name="family" mode="prepend" binding="strong">
-                  <string>LXGW ZhenKai GB</string>
+                  <string>LXGW ZhenKai Slab GB</string>
                 </edit>
               </match>
 
               <match target="pattern">
                 <test name="family" compare="contains"><string>KaiTi</string></test>
                 <edit name="family" mode="prepend" binding="strong">
-                  <string>LXGW ZhenKai GB</string>
+                  <string>LXGW ZhenKai Slab GB</string>
                 </edit>
               </match>
 

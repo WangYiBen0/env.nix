@@ -15,7 +15,7 @@ nh home switch -- --flake .#w1ngd1nga5ter@matebook16d
 
 # Build a custom package
 nix build .#miyu
-nix build .#fonts.lxgw-zhenkai
+nix build .#lxgw-zhenkai
 ```
 
 ## Project Structure
