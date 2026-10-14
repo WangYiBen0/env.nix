@@ -1,5 +1,11 @@
-{ pkgs, ... }:
 {
+  lib,
+  config,
+  pkgs,
+  ...
+}:
+
+lib.mkIf config.machine.modules.nix.enable {
   nix = {
     package = pkgs.lix;
 

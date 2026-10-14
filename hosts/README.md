@@ -26,7 +26,7 @@ hosts/
     │   ├── home/                # User HM configs (auto-scanned)
     │   │   ├── nixos-module.nix # Registers home-manager.users, imports user nixos-modules
     │   │   └── w1ngd1nga5ter/
-    │   │       ├── default.nix           # Imports modules/home, sets profile
+    │   │       ├── default.nix           # Profile toggles + host-specific usage (shared stack comes from the wiring)
     │   │       ├── nixos-module/
     │   │       │   └── default.nix       # users.users / users.groups definition
     │   │       ├── standalone/
@@ -36,6 +36,20 @@ hosts/
     ├── sxyz-89/                 # (same structure as matebook16d)
     └── sxyz-79/
 ```
+
+## Profiles
+
+Shared presets live in [`profiles/`](../profiles/README.md) at the project
+root — same architecture as `modules/`, imported into every context. A host
+or user opts in by setting the toggle, e.g. `machine.profiles.desktop =
+true;` in its `default.nix`. Host-specific usage — enabling individual
+modules, per-machine overrides — goes in the host's own files.
+
+The shared Home Manager stack is defined once in `hosts/default.nix`:
+standalone builds include it directly in their module list, and it is
+forwarded to `x86_64-linux/default.nix`, which applies it to every user of
+every host through `home-manager.sharedModules`. User `default.nix` files
+therefore contain only user-specific config.
 
 ## Host Auto-Discovery
 

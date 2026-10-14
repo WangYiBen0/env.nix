@@ -1,5 +1,11 @@
-{ pkgs, lib, ... }:
 {
+  pkgs,
+  lib,
+  config,
+  ...
+}:
+
+lib.mkIf config.machine.modules.yazi.enable {
   programs.yazi = {
     enable = true;
     shellWrapperName = "y";

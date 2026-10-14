@@ -1,5 +1,11 @@
-{ pkgs, ... }:
 {
+  lib,
+  config,
+  pkgs,
+  ...
+}:
+
+lib.mkIf config.machine.modules.packages.enable {
   environment.systemPackages = with pkgs; [
     # basic
     git

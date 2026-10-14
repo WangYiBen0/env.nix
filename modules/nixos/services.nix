@@ -1,4 +1,10 @@
 {
+  lib,
+  config,
+  ...
+}:
+
+lib.mkIf config.machine.modules.services.enable {
   services = {
     printing.enable = true;
     pulseaudio.enable = false;
@@ -29,19 +35,9 @@
     };
   };
 
-  networking = {
-    firewall = {
-      enable = true;
-      allowedTCPPorts = [ 25565 ];
-      allowedUDPPorts = [ 25565 ];
-
-      trustedInterfaces = [ "Mihomo" ];
-
-      extraReversePathFilterRules = ''
-        iifname "Mihomo" accept
-      '';
-    };
-  };
+  # The firewall itself is base infrastructure; what may pass through it is a
+  # per-profile decision — see modules/nixos/profiles/desktop.nix.
+  networking.firewall.enable = true;
 
   systemd.services."kmsconvt@tty1".enable = false;
 }

@@ -1,4 +1,10 @@
 {
+  lib,
+  config,
+  ...
+}:
+
+lib.mkIf config.machine.modules.git.enable {
   programs.git = {
     enable = true;
     settings = {

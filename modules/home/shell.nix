@@ -1,5 +1,11 @@
-{ pkgs, ... }:
 {
+  lib,
+  config,
+  pkgs,
+  ...
+}:
+
+lib.mkIf config.machine.modules.shell.enable {
   programs = {
     bash.enable = true;
     fish = {

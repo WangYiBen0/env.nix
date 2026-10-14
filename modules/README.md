@@ -4,8 +4,12 @@
 
 The module system uses two layers:
 
-1. **Profiles** — high-level presets that set multiple module options at once
-2. **Modules** — individual features with their own enable options
+1. **Profiles** — high-level presets that set multiple module options at once.
+   They live in [`profiles/`](../profiles/README.md) at the project root and
+   only flip `machine.*` options.
+2. **Modules** — individual features with their own enable options. Every
+   module here is gated behind a single enable option; importing a module
+   alone enables nothing.
 
 Set a profile in the host's `default.nix`:
 
@@ -30,11 +34,16 @@ All `machine.*` options are defined in `modules/common/options.nix` (single sour
 
 ### NixOS Modules
 
-| Module | Option                          | Description                                        |
-| ------ | ------------------------------- | -------------------------------------------------- |
-| font   | `machine.modules.font.enable`   | System fonts (Noto, Maple Mono, JetBrains Mono, …) |
-| compat | `machine.modules.compat.enable` | nix-ld, flatpak, podman, Wine                      |
-| honk   | `machine.modules.honk.enable`   | honk transparent proxy + doona web UI              |
+| Module   | Option                            | Description                                                       |
+| -------- | --------------------------------- | ----------------------------------------------------------------- |
+| desktop  | `machine.modules.desktop.enable`  | Desktop session: plasma + niri, desktop apps, firewall exceptions |
+| font     | `machine.modules.font.enable`     | System fonts (Noto, Maple Mono, JetBrains Mono, …)                |
+| compat   | `machine.modules.compat.enable`   | nix-ld, flatpak, podman, Wine                                     |
+| honk     | `machine.modules.honk.enable`     | honk transparent proxy + doona web UI                             |
+| system   | `machine.modules.system.enable`   | Base system: kernel, timezone, locale, boot                       |
+| services | `machine.modules.services.enable` | Base services: PipeWire, SSH, bluetooth, printing                 |
+| packages | `machine.modules.packages.enable` | System packages (shared with the HM side)                         |
+| nix      | `machine.modules.nix.enable`      | Nix settings, caches, GC (shared with common/ and HM)             |
 
 #### honk options
 
@@ -63,20 +72,34 @@ Reach the UI from another machine by setting `api.listen` to a LAN address.
 
 ### Home Manager Modules
 
-| Module    | Option                             | Description                 |
-| --------- | ---------------------------------- | --------------------------- |
-| niri      | `machine.modules.niri.enable`      | Niri compositor config      |
-| kitty     | `machine.modules.kitty.enable`     | Kitty terminal              |
-| font      | `machine.modules.font.enable`      | User fonts + fontconfig     |
-| ime       | `machine.modules.ime.enable`       | Fcitx5 + RIME + rime-ice    |
-| launcher  | `machine.modules.launcher.enable`  | Fuzzel launcher             |
-| theme     | `machine.modules.theme.enable`     | Cursor, GTK, Qt, Catppuccin |
-| directory | `machine.modules.directory.enable` | XDG user directories        |
-| variable  | `machine.modules.variable.enable`  | Desktop session variables   |
+| Module           | Option                                    | Description                                          |
+| ---------------- | ----------------------------------------- | ---------------------------------------------------- |
+| desktop          | `machine.modules.desktop.enable`          | Desktop user apps, zen-browser, swaync, polkit agent |
+| packages         | `machine.modules.packages.enable`         | User CLI packages (shared with the NixOS side)       |
+| nix              | `machine.modules.nix.enable`              | home-manager self-management (shared)                |
+| shell            | `machine.modules.shell.enable`            | Bash, Fish, Bat, Eza, Zellij, Zoxide, aliases        |
+| starship         | `machine.modules.starship.enable`         | Starship prompt                                      |
+| git              | `machine.modules.git.enable`              | Git identity and settings                            |
+| editor           | `machine.modules.editor.enable`           | Nixvim                                               |
+| yazi             | `machine.modules.yazi.enable`             | Yazi file manager + plugins                          |
+| nix-index        | `machine.modules.nix-index.enable`        | nix-index + comma                                    |
+| niri             | `machine.modules.niri.enable`             | Niri compositor config                               |
+| kitty            | `machine.modules.kitty.enable`            | Kitty terminal                                       |
+| font             | `machine.modules.font.enable`             | User fonts + fontconfig                              |
+| ime              | `machine.modules.ime.enable`              | Fcitx5 + RIME + rime-ice                             |
+| launcher         | `machine.modules.launcher.enable`         | Fuzzel launcher                                      |
+| theme            | `machine.modules.theme.enable`            | Cursor, GTK, Qt, Catppuccin                          |
+| directory        | `machine.modules.directory.enable`        | XDG user directories                                 |
+| variable         | `machine.modules.variable.enable`         | Desktop session variables                            |
+| deepseek-harness | `machine.modules.deepseek-harness.enable` | dsh web UI user service                              |
 
 ### Always-Loaded Modules
 
-Shared modules (overlays, packages, nix, system, services) are always loaded regardless of profile.
+Only plumbing is always loaded: `common/options.nix` (all `machine.*`
+declarations), `common/overlays.nix` (project overlays) and the external
+module imports in `*/modules.nix`. Generic personal defaults (timezone,
+locale, git identity, personal cachix) live inside gated modules and are
+enabled by the desktop profile.
 
 ## Directory Structure
 
@@ -97,10 +120,7 @@ modules/
 │   ├── honk.nix              # honk proxy + doona web UI (gated: machine.modules.honk.enable)
 │   ├── compat.nix            # nix-ld, flatpak, podman, Wine (gated: machine.modules.compat.enable)
 │   ├── font.nix              # System fonts (gated: machine.modules.font.enable)
-│   └── profiles/
-│       ├── default.nix       # Imports all profiles
-│       ├── desktop.nix       # Sets module options for desktop
-│       └── server.nix        # (reserved)
+│   └── desktop.nix           # Desktop session bundle (gated: machine.modules.desktop.enable)
 ├── home/                     # Home Manager user-level modules
 │   ├── default.nix           # Auto-imports all .nix via scanNixFiles
 │   ├── modules.nix           # External module imports (catppuccin, nixvim, zen)
@@ -121,10 +141,8 @@ modules/
 │   ├── variable.nix          # Session variables (gated: machine.modules.variable.enable)
 │   ├── directory.nix         # XDG user dirs (gated: machine.modules.directory.enable)
 │   ├── kitty/                # Kitten scripts (scroll_mark.py, search.py)
-│   └── profiles/
-│       ├── default.nix       # Imports all profiles
-│       ├── desktop.nix       # Sets module options for desktop
-│       └── server.nix        # (reserved)
+│   ├── deepseek-harness.nix  # dsh web UI user service (gated: machine.modules.deepseek-harness.enable)
+│   └── desktop.nix           # Desktop user apps + polkit agent (gated: machine.modules.desktop.enable)
 ├── home-standalone/          # Standalone Home Manager modules
 └── home-as-module/           # Home Manager as NixOS module
 ```
@@ -133,5 +151,6 @@ modules/
 
 1. `modules/common/` — loaded first (options, overlays, shared packages)
 2. `modules/nixos/` or `modules/home/` — loaded by host configs
-3. Profile sets module options → modules check their enable options
+3. `profiles/` (project root) — imported alongside them; a profile sets
+   module options → modules check their enable options
 4. Host-specific overrides — loaded last (highest priority)

@@ -11,4 +11,5 @@
   #     y = 0;
   #   };
   # };
+  machine.modules.deepseek-harness.enable = true;
 }

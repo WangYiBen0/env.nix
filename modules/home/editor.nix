@@ -1,4 +1,10 @@
 {
+  lib,
+  config,
+  ...
+}:
+
+lib.mkIf config.machine.modules.editor.enable {
   programs.nixvim = {
     enable = true;
 

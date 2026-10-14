@@ -25,7 +25,8 @@ nix build .#fonts.lxgw-zhenkai
 ├── flake.nix                 # Flake entry, defines inputs
 ├── outputs/                  # Flake outputs, deployment, dev tools
 ├── hosts/                    # Per-host NixOS + HM configs
-├── modules/                  # Shared NixOS, HM & common modules
+├── modules/                  # Shared NixOS, HM & common modules (option-gated)
+├── profiles/                 # Presets that flip machine.* options
 ├── lib/                      # Custom lib (scanNixFiles, scanPackages, listSubDir, lastAfterDash)
 ├── overlays/                 # Package overlays (auto-merged from all .nix files)
 └── pkgs/                     # Custom packages (fonts, agent, etc.)
@@ -33,11 +34,12 @@ nix build .#fonts.lxgw-zhenkai
 
 ## Documentation
 
-| Directory                     | Docs                                         |
-| ----------------------------- | -------------------------------------------- |
-| [hosts/](hosts/README.md)     | Managed machines, host auto-discovery        |
-| [modules/](modules/README.md) | Profile system, NixOS, HM & common modules   |
-| [outputs/](outputs/README.md) | Flake outputs, deployment, dev tools, caches |
+| Directory                       | Docs                                         |
+| ------------------------------- | -------------------------------------------- |
+| [hosts/](hosts/README.md)       | Managed machines, host auto-discovery        |
+| [modules/](modules/README.md)   | Module system, NixOS, HM & common modules    |
+| [profiles/](profiles/README.md) | Shared presets that flip machine.* options   |
+| [outputs/](outputs/README.md)   | Flake outputs, deployment, dev tools, caches |
 
 ## License
 

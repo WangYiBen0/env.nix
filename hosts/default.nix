@@ -12,6 +12,15 @@ let
       overlays = [ (import ../overlays inputs) ];
     };
 
+  # Shared Home Manager stack, defined once: included directly in standalone
+  # builds, and forwarded to the per-arch wiring, which applies it to every
+  # user of every host through home-manager.sharedModules.
+  hmSharedModules = [
+    ../modules/common/options.nix
+    ../modules/home
+    ../profiles
+  ];
+
   allUserEntries = builtins.concatMap (
     system:
     let
@@ -34,7 +43,7 @@ let
 in
 {
   nixosConfigurations = builtins.foldl' (acc: cfgs: acc // cfgs) { } (
-    map (system: import ./${system} (inputs // { inherit system; })) linuxSystems
+    map (system: import ./${system} (inputs // { inherit system hmSharedModules; })) linuxSystems
   );
 
   homeConfigurations = builtins.listToAttrs (
@@ -50,7 +59,9 @@ in
           pkgs = pkgsFor system;
           modules = [
             ../modules/common
-            ../modules/home
+          ]
+          ++ hmSharedModules
+          ++ [
             ../modules/home-standalone
             ./${system}/${host}/home/${user}
             ./${system}/${host}/home/${user}/standalone

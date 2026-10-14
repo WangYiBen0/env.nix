@@ -1,4 +1,10 @@
 {
+  lib,
+  config,
+  ...
+}:
+
+lib.mkIf config.machine.modules.starship.enable {
   programs = {
     starship = {
       enable = true;

@@ -1,9 +1,4 @@
 {
-  imports = [
-    ../../../../../modules/common/options.nix
-    ../../../../../modules/home
-  ];
-
   machine.profiles.desktop = true;
 
   home.stateVersion = import ./state-version.nix;

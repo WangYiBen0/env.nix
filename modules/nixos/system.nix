@@ -1,5 +1,11 @@
-{ pkgs, ... }:
 {
+  lib,
+  config,
+  pkgs,
+  ...
+}:
+
+lib.mkIf config.machine.modules.system.enable {
   networking.networkmanager.enable = true;
 
   time.timeZone = "Asia/Shanghai";
