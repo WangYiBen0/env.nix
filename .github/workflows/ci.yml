@@ -32,9 +32,6 @@ jobs:
             access-tokens = github.com=${{ github.token }}
             experimental-features = nix-command flakes
 
-      - name: Enable Magic Nix Cache
-        uses: DeterminateSystems/magic-nix-cache-action@v14
-
       - name: Set up Cachix
         uses: cachix/cachix-action@v17
         with:
@@ -68,9 +65,6 @@ jobs:
           extra-conf: |
             access-tokens = github.com=${{ github.token }}
             experimental-features = nix-command flakes
-
-      - name: Enable Magic Nix Cache
-        uses: DeterminateSystems/magic-nix-cache-action@v14
 
       - name: Set up Cachix
         uses: cachix/cachix-action@v17
