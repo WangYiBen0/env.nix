@@ -1,0 +1,94 @@
+name: Push cache
+
+# On-demand build-and-push to Cachix. The CI cache job only pushes when its
+# diff logic says so (and one broken package in an all-packages build used to
+# strand every other one); this is the manual escape hatch: pick packages, a
+# broken one only takes itself down.
+
+on:
+  workflow_dispatch:
+    inputs:
+      packages:
+        description: "Packages to build and push (comma/space separated); empty = all"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: push-cache
+  cancel-in-progress: false
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v22
+        with:
+          determinate: false
+          extra-conf: |
+            access-tokens = github.com=${{ github.token }}
+            experimental-features = nix-command flakes
+
+      - name: Set up Cachix
+        uses: cachix/cachix-action@v17
+        with:
+          name: w1ngd1nga5ter
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community,catppuccin,niri,nixpkgs-python
+
+      - name: Build and push to Cachix
+        env:
+          NIXPKGS_ALLOW_UNFREE: "1"
+        run: |
+          set -euo pipefail
+
+          requested="${{ inputs.packages }}"
+          if [ -z "$(echo "$requested" | tr -d ' ,')" ]; then
+            echo "==> No packages requested, building all"
+            mapfile -t names < <(nix eval .#packages.x86_64-linux --apply builtins.attrNames --json | sed -e 's/\[//' -e 's/\]//' -e 's/,/\n/g' -e 's/"//g' -e 's/ //g')
+          else
+            mapfile -t names < <(echo "$requested" | tr ', ' '\n\n' | sed '/^$/d')
+          fi
+
+          ok=()
+          failed=()
+          for p in "${names[@]}"; do
+            echo "==> Building $p"
+            if nix build --no-link ".#packages.x86_64-linux.$p"; then
+              ok+=(".#packages.x86_64-linux.$p")
+            else
+              # One broken package takes itself down only; whatever built
+              # still gets pushed.
+              echo "::error title=nix build failed::nix build failed for $p"
+              failed+=("$p")
+            fi
+          done
+
+          if [ ${#ok[@]} -eq 0 ]; then
+            echo "==> Nothing built successfully"
+            exit 1
+          fi
+
+          echo "==> Pushing ${#ok[@]} package(s) to Cachix"
+          nix path-info "${ok[@]}" | cachix push w1ngd1nga5ter
+
+          {
+            echo "### Push cache"
+            echo "- pushed: ${#ok[@]} package(s)"
+            if [ ${#failed[@]} -gt 0 ]; then
+              echo "- failed: ${failed[*]}"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ ${#failed[@]} -gt 0 ]; then
+            echo "::error::nix build failed for: ${failed[*]}"
+            exit 1
+          fi
