@@ -34,5 +34,6 @@ lib.mkIf config.machine.profiles.desktop {
     theme.enable = true;
     directory.enable = true;
     variable.enable = true;
+    deepseek-harness.enable = true;
   };
 }
