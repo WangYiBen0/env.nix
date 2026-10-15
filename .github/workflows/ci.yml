@@ -78,6 +78,7 @@ jobs:
         run: git fetch --no-tags --depth=1 origin "${{ github.event.before }}"
 
       - name: Build changed packages and push to Cachix
+        id: cache
         env:
           NIXPKGS_ALLOW_UNFREE: "1"
         run: |
@@ -122,8 +123,44 @@ jobs:
             exit 0
           fi
 
-          echo "==> Building: ${build_list[*]}"
-          # nix substitutes from Cachix/Magic Cache, so already-built paths are
-          # not rebuilt; cachix push only uploads what is missing.
-          nix build --no-link "${build_list[@]}"
-          nix path-info "${build_list[@]}" | cachix push w1ngd1nga5ter
+          # Build each package independently: one broken package must not
+          # strand the pushes of everything that did build (this is how niri
+          # silently vanished from Cachix).
+          ok=()
+          failed=()
+          for installable in "${build_list[@]}"; do
+            p="${installable##*.}"
+            echo "==> Building $p"
+            if nix build --no-link "$installable"; then
+              ok+=("$installable")
+            else
+              echo "::error title=nix build failed::nix build failed for $p"
+              failed+=("$p")
+            fi
+          done
+
+          if [ ${#ok[@]} -gt 0 ]; then
+            echo "==> Pushing ${#ok[@]} package(s) to Cachix"
+            nix path-info "${ok[@]}" | cachix push w1ngd1nga5ter
+          else
+            echo "==> Nothing built successfully"
+          fi
+
+          {
+            echo "### Cachix push"
+            if [ ${#ok[@]} -gt 0 ]; then
+              echo "- pushed: ${#ok[@]} package(s)"
+            fi
+            if [ ${#failed[@]} -gt 0 ]; then
+              echo "- failed: ${failed[*]}"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          printf "failed=%s\n" "${failed[*]:-}" >> "$GITHUB_OUTPUT"
+
+      # Failing here — after the push — flags the broken packages without
+      # stranding the ones that did build.
+      - name: Fail on build errors
+        if: steps.cache.outputs.failed != ''
+        run: |
+          echo "nix build failed for: ${{ steps.cache.outputs.failed }}"
+          exit 1
