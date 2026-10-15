@@ -62,11 +62,7 @@ stdenv.mkDerivation (finalAttrs: {
     $out/bin/dst help >/dev/null
   '';
 
-  passthru.updateScript = nix-update-script {
-    # The update script re-invokes nix-update without --flake, which cannot
-    # eval this flake; always point it back at the local flake.
-    extraArgs = [ "--flake" ];
-  };
+  passthru.updateScript = nix-update-script { };
 
   meta = with lib; {
     description = "Terminal UI launcher for DeepSeek Harness";

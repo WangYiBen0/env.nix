@@ -115,7 +115,6 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   passthru.updateScript = nix-update-script {
     # TODO: Drop after 1.0
     extraArgs = [
-      "--flake"
       "--version"
       "unstable"
     ];

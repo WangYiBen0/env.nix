@@ -25,6 +25,9 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v22
         with:
+          # Determinate Nix tries to log in to FlakeHub when id-token: write is
+          # set; this repo publishes nowhere, so stay on vanilla Nix.
+          determinate: false
           extra-conf: |
             access-tokens = github.com=${{ github.token }}
             experimental-features = nix-command flakes
@@ -45,26 +48,6 @@ jobs:
           NIXPKGS_ALLOW_UNFREE: "1"
         run: nix flake check
 
-  flakehub-publish:
-    needs: checks
-    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-
-      - uses: DeterminateSystems/determinate-nix-action@v3
-
-      - uses: DeterminateSystems/flakehub-push@main
-        env:
-          NIXPKGS_ALLOW_UNFREE: "1"
-        with:
-          name: W1ngD1nGa5ter/env.nix
-          rolling: true
-          visibility: unlisted
-          include-output-paths: true
-
   cache:
     needs: checks
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
@@ -79,6 +62,9 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v22
         with:
+          # Determinate Nix tries to log in to FlakeHub when id-token: write is
+          # set; this repo publishes nowhere, so stay on vanilla Nix.
+          determinate: false
           extra-conf: |
             access-tokens = github.com=${{ github.token }}
             experimental-features = nix-command flakes
@@ -103,31 +89,38 @@ jobs:
         run: |
           set -euo pipefail
 
-          base="${{ github.event.before }}"
-          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
-            base="${{ github.sha }}^"
-          fi
-          changed="$(git diff --name-only "$base" "${{ github.sha }}")"
-          echo "Changed files:"
-          echo "$changed"
-
-          build_list=()
-
           # If shared/global inputs changed, rebuild everything.
           # (The `*` glob in installables is unsupported here, so enumerate
           #  package attribute names explicitly.)
-          if echo "$changed" | grep -qE '^(flake\.nix|flake\.lock|outputs/|overlays/|lib/|modules/)'; then
+          build_all() {
             echo "==> Global inputs changed, building all packages"
             mapfile -t all_pkgs < <(nix eval .#packages.x86_64-linux --apply builtins.attrNames --json | sed -e 's/\[//' -e 's/\]//' -e 's/,/\n/g' -e 's/"//g' -e 's/ //g')
             for p in "${all_pkgs[@]}"; do
-              build_list+=(".#packages.x86_64-linux.$p")
+              echo ".#packages.x86_64-linux.$p"
             done
+          }
+
+          # Dispatched runs (Update pkgs pushes a flake.lock bump and a
+          # package-update commit; diffing parent..head would miss the lock
+          # bump entirely) have no before-ref — rebuild everything.
+          before="${{ github.event.before }}"
+          if [ -z "$before" ] || [ "$before" = "0000000000000000000000000000000000000000" ]; then
+            mapfile -t build_list < <(build_all)
           else
-            for d in $(find pkgs -name package.nix -exec dirname {} \;); do
-              if echo "$changed" | grep -qE "^${d}/"; then
-                build_list+=(".#packages.x86_64-linux.$(basename "$d")")
-              fi
-            done
+            changed="$(git diff --name-only "$before" "${{ github.sha }}")"
+            echo "Changed files:"
+            echo "$changed"
+
+            build_list=()
+            if echo "$changed" | grep -qE '^(flake\.nix|flake\.lock|outputs/|overlays/|lib/|modules/)'; then
+              mapfile -t build_list < <(build_all)
+            else
+              for d in $(find pkgs -name package.nix -exec dirname {} \;); do
+                if echo "$changed" | grep -qE "^${d}/"; then
+                  build_list+=(".#packages.x86_64-linux.$(basename "$d")")
+                fi
+              done
+            fi
           fi
 
           if [ ${#build_list[@]} -eq 0 ]; then

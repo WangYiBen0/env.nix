@@ -27,11 +27,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     runHook postInstall
   '';
 
-  passthru.updateScript = nix-update-script {
-    # The update script re-invokes nix-update without --flake, which cannot
-    # eval this flake; always point it back at the local flake.
-    extraArgs = [ "--flake" ];
-  };
+  passthru.updateScript = nix-update-script { };
 
   meta = {
     description = "Slab variant of a bolder weight, AI-assisted font derived from LXGW Wenkai";

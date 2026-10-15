@@ -28,7 +28,6 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     # so the default stable strategy always raises VersionError; track the
     # newest release explicitly.
     extraArgs = [
-      "--flake"
       "--version"
       "unstable"
     ];

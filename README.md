@@ -1,7 +1,5 @@
 # env.nix
 
-[![FlakeHub](https://img.shields.io/endpoint?url=https://flakehub.com/f/W1ngD1nGa5ter/env.nix/badge)](https://flakehub.com/flake/W1ngD1nGa5ter/env.nix)
-
 My all-in-one environment configuration, including NixOS & Home Manager.
 
 ## Quick Start
