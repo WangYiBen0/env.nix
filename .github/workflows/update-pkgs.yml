@@ -213,9 +213,9 @@ jobs:
             for entry in "${packages[@]}"; do
               read -r pkg file <<<"$entry"
               echo "==> Updating $pkg ($file)"
-              # The loop's git operations (add/checkout) re-key the flake
-              # source store path; re-materialize it before every package so
-              # the eval's flakeImportPath always exists.
+              # The git operations of this loop (add/checkout) re-key the
+              # flake source store path; re-materialize it before every
+              # package so the eval flakeImportPath always exists.
               nix flake archive --no-write-lock-file > /dev/null 2>&1 || true
               # Transient flake-input fetch failures (tarball resets, timeouts)
               # surface here as eval errors; retry a few times before giving
