@@ -192,13 +192,28 @@ jobs:
             for entry in "${packages[@]}"; do
               read -r pkg file <<<"$entry"
               echo "==> Updating $pkg ($file)"
-              if ! "$nu_py" "$RUNNER_TEMP/nix-update-wrapper.py" --flake "$pkg" --override-filename "$file" --use-update-script; then
+              # Transient flake-input fetch failures (tarball resets, timeouts)
+              # surface here as eval errors; retry a few times before giving
+              # up on a package, undoing any partial rewrite between attempts.
+              success=0
+              for attempt in 1 2 3; do
+                if "$nu_py" "$RUNNER_TEMP/nix-update-wrapper.py" --flake "$pkg" --override-filename "$file" --use-update-script; then
+                  success=1
+                  break
+                fi
+                echo "attempt $attempt/3 failed for $pkg"
+                git checkout -- "$file" 2>/dev/null || true
+                if [ "$attempt" -lt 3 ]; then
+                  sleep 10
+                fi
+              done
+              if [ "$success" != 1 ]; then
                 # One broken package must not block the others or strand the
                 # updates that did succeed: undo any partial rewrite, warn,
                 # and keep going. The job is failed at the very end, after
                 # the Push step has run.
                 echo "::error title=nix-update failed::nix-update failed for $pkg"
-                git checkout -- "$file"
+                git checkout -- "$file" 2>/dev/null || true
                 failed+=("$pkg")
               elif ! git diff --quiet; then
                 changed+=("$pkg")
