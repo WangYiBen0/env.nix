@@ -175,17 +175,21 @@ jobs:
               sys.exit(0)
           EOF
 
-          nix develop --command bash -c '
+          # Resolve nix-update straight from the store and run the loop in a
+          # plain bash: running it inside `nix develop` (dev shell + the
+          # nested mkShell develops of every updateScript) made the flake
+          # source store path vanish mid-run on runners — "opening file
+          # ...-source: No such file or directory".
+          nupath=$(nix build --no-link --print-out-paths nixpkgs#nix-update)
+          nu_py=$(head -n1 "$nupath/bin/.nix-update-wrapped" | sed "s/^#!//")
+          export nupath nu_py
+          export PYTHONPATH="$(echo "$nupath"/lib/python*/site-packages)${PYTHONPATH:+:$PYTHONPATH}"
+
+          bash -c '
             set -e
             packages=$(nix eval --raw --impure --expr "$(cat "$RUNNER_TEMP/update-expr.nix")")
             mapfile -t packages <<<"$packages"
             echo "Packages to update: ${packages[*]}"
-
-            nu=$(command -v nix-update)
-            bindir=$(dirname "$nu")
-            appdir=$(dirname "$bindir")
-            nu_py=$(head -n1 "$bindir/.nix-update-wrapped" | sed "s/^#!//")
-            export PYTHONPATH="$(echo "$appdir"/lib/python*/site-packages)${PYTHONPATH:+:$PYTHONPATH}"
 
             changed=()
             failed=()
