@@ -236,10 +236,18 @@ rustPlatform.buildRustPackage (finalAttrs: {
     # head of `native-api` by hand. GH_TOKEN (the workflow's github.token)
     # keeps the call above the shared-runner IP rate limit; without it the
     # request runs unauthenticated.
-    json=$(
-      curl -fsSL ''${GH_TOKEN:+-H "Authorization: Bearer ''$GH_TOKEN"} \
-        https://api.github.com/repos/daeuniverse/honk/commits/native-api
-    )
+    tmp=$(mktemp)
+    code=$(curl -sS -o "$tmp" -w '%{http_code}' \
+      ''${GH_TOKEN:+-H "Authorization: Bearer ''$GH_TOKEN"} \
+      https://api.github.com/repos/daeuniverse/honk/commits/native-api)
+    if [ "$code" = 404 ] || [ "$code" = 422 ]; then
+      # Upstream deleted the branch (2026-10): the pin stays on the last
+      # native-api commit until the branch returns or the pin is rethought.
+      echo "honk: the native-api branch is gone upstream; skipping auto-update" >&2
+      exit 0
+    fi
+    [ "$code" = 200 ] || { echo "error: GitHub API returned HTTP $code" >&2; exit 1; }
+    json=$(cat "$tmp")
     rev=$(echo "$json" | jq -r .sha)
     date=$(echo "$json" | jq -r .commit.author.date | cut -dT -f1)
 
