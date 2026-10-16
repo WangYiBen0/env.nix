@@ -157,6 +157,9 @@ jobs:
         id: pkgs
         env:
           NIXPKGS_ALLOW_UNFREE: "1"
+          # honk's updateScript walks the GitHub API; an authenticated call
+          # dodges the shared-runner IP rate limit.
+          GH_TOKEN: ${{ github.token }}
         run: |
           # The package list is written by the "Prepare package list" step.
           # nix-update exits non-zero via an uncaught VersionError when the
@@ -210,6 +213,10 @@ jobs:
             for entry in "${packages[@]}"; do
               read -r pkg file <<<"$entry"
               echo "==> Updating $pkg ($file)"
+              # The loop's git operations (add/checkout) re-key the flake
+              # source store path; re-materialize it before every package so
+              # the eval's flakeImportPath always exists.
+              nix flake archive --no-write-lock-file > /dev/null 2>&1 || true
               # Transient flake-input fetch failures (tarball resets, timeouts)
               # surface here as eval errors; retry a few times before giving
               # up on a package, undoing any partial rewrite between attempts.

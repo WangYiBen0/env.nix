@@ -233,8 +233,13 @@ rustPlatform.buildRustPackage (finalAttrs: {
     export PATH="${lib.makeBinPath [ jq ]}:$PATH"
 
     # nix-update cannot follow an untagged branch channel, so walk the
-    # head of `native-api` by hand.
-    json=$(curl -fsSL https://api.github.com/repos/daeuniverse/honk/commits/native-api)
+    # head of `native-api` by hand. GH_TOKEN (the workflow's github.token)
+    # keeps the call above the shared-runner IP rate limit; without it the
+    # request runs unauthenticated.
+    json=$(
+      curl -fsSL ''${GH_TOKEN:+-H "Authorization: Bearer ''$GH_TOKEN"} \
+        https://api.github.com/repos/daeuniverse/honk/commits/native-api
+    )
     rev=$(echo "$json" | jq -r .sha)
     date=$(echo "$json" | jq -r .commit.author.date | cut -dT -f1)
 
