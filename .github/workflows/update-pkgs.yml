@@ -175,6 +175,20 @@ jobs:
               sys.exit(0)
           EOF
 
+          # Materialize the flake source in the store: for a clean git tree
+          # `nix flake metadata` reports a store path that is only materialized
+          # lazily, and nix-update's eval dies with "opening file ...-source:
+          # No such file or directory" when nothing forced the copy beforehand
+          # (the dev shell used to do it as a side effect). Archiving also
+          # warms every flake input for the per-package evals.
+          for attempt in 1 2 3; do
+            nix flake archive && break
+            echo "nix flake archive attempt $attempt failed"
+            if [ "$attempt" -lt 3 ]; then
+              sleep 10
+            fi
+          done
+
           # Resolve nix-update straight from the store and run the loop in a
           # plain bash: running it inside `nix develop` (dev shell + the
           # nested mkShell develops of every updateScript) made the flake
