@@ -136,14 +136,14 @@ let
     };
   });
 
-  version = "8.2.8.260818002";
+  version = "8.3.1.261008001";
   arch = if stdenv.hostPlatform.isAarch64 then "arm64" else "amd64";
   url = "https://dtapp-pub.dingtalk.com/dingtalk-desktop/xc_dingtalk_update/linux_deb/Release/com.alibabainc.dingtalk_${version}_${arch}.deb";
   hash =
     if stdenv.hostPlatform.isAarch64 then
-      "sha256-Iiaeqtql59q2okwcN7ryxFpXIiGjg5qf9KSHB5gS2rw="
+      "sha256-GcMePt3sN8W1yK3FsSp9uyC5zQQWuXhyR3pvhlrPhgM="
     else
-      "sha256-iNrWB7u3pykYOZORydU67fz6Om2rAffQZZ5iwcoyZ48=";
+      "sha256-NatoDe0QSrzcU6Z/z8/ytWR5mX8W6Kv+EcQfv1j1gl4=";
 
   src = fetchurl {
     inherit url hash;
@@ -385,14 +385,42 @@ stdenv.mkDerivation {
       }
       echo ">> hash: $hash"
 
-      # Only replace a real SRI hash (ends with '=') so the aarch64
-      # placeholder stays untouched.
-      sed -i \
-        -e "s|version = \".*\";|version = \"$version\";|" \
-        -e "s|\"sha256-[^\"]*=\";|\"$hash\";|" \
-        "$expr"
+      # Regenerate the whole conditional hash block from freshly prefetched
+      # archives: patching individual SRIs with sed broke whenever nixfmt
+      # reshaped the block, and unanchored patterns clobbered the vendored
+      # openssl_1_1 pin. Both architectures are prefetched so neither branch
+      # goes stale.
+      sed -i "s|^  version = \"[^\"]*\";|  version = \"$version\";|" "$expr"
 
-      echo ">> updated $current -> $version (hash: $hash)"
+      deb_url_arm64=$(echo "$deb_url" | sed 's/_amd64\.deb/_arm64.deb/')
+      hash_arm64=$(
+        nix store prefetch-file --json \
+          --name "com.alibabainc.dingtalk_''${version}_arm64.deb" \
+          "$deb_url_arm64" |
+          jq -r '.hash'
+      )
+      [ -n "$hash_arm64" ] && [ "$hash_arm64" != "null" ] || {
+        echo "error: failed to prefetch the arm64 deb ($deb_url_arm64)" >&2
+        exit 1
+      }
+
+      awk -v ha="$hash_arm64" -v hd="$hash" '
+        BEGIN { replaced = 0 }
+        !replaced && /^  hash =/ {
+          print "  hash ="
+          print "    if stdenv.hostPlatform.isAarch64 then"
+          print "      \"" ha "\""
+          print "    else"
+          print "      \"" hd "\";"
+          replaced = 1
+          next
+        }
+        replaced == 1 && /";$/ { replaced = 2; next }
+        replaced == 1 { next }
+        { print }
+      ' "$expr" > "$expr.tmp" && mv "$expr.tmp" "$expr"
+
+      echo ">> updated $current -> $version (amd64: $hash, arm64: $hash_arm64)"
     '';
   };
 
