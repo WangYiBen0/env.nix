@@ -17,7 +17,7 @@ permissions:
 jobs:
   checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -40,10 +40,59 @@ jobs:
           extraPullNames: nix-community,catppuccin,niri,nixpkgs-python
 
       - name: Check
-        # Only the host system; building other systems is wasted on this runner.
         env:
           NIXPKGS_ALLOW_UNFREE: "1"
         run: nix flake check
+
+      # `nix flake check` only evaluates the configurations — a build failure
+      # (stale hash, dead fetch) still passes. Build every system and home
+      # closure for real.
+      - name: Build system and home closures
+        env:
+          NIXPKGS_ALLOW_UNFREE: "1"
+        run: |
+          set -euo pipefail
+          parse() { sed -e 's/\[//' -e 's/\]//' -e 's/,/\n/g' -e 's/"//g' -e 's/ //g'; }
+          installables=()
+          mapfile -t hosts < <(nix eval .#nixosConfigurations --apply builtins.attrNames --json | parse)
+          for h in "${hosts[@]}"; do
+            installables+=(".#nixosConfigurations.$h.config.system.build.toplevel")
+          done
+          mapfile -t homes < <(nix eval .#homeConfigurations --apply builtins.attrNames --json | parse)
+          for h in "${homes[@]}"; do
+            installables+=(".#homeConfigurations.\"$h\".activationPackage")
+          done
+          echo "==> Building ${#installables[@]} closure(s)"
+          nix build --no-link --print-out-paths "${installables[@]}" | tee "$RUNNER_TEMP/closure-outs.txt"
+
+      # Everything already served by a substituter is skipped; the rest
+      # would have to be rebuilt on every machine and lands in Cachix.
+      - name: Push closure paths missing from substituters
+        env:
+          NIXPKGS_ALLOW_UNFREE: "1"
+        run: |
+          set -euo pipefail
+          outs=$(cat "$RUNNER_TEMP/closure-outs.txt")
+          nix path-info -r $outs | sort -u > "$RUNNER_TEMP/closure.txt"
+          echo "==> Closure paths: $(wc -l < "$RUNNER_TEMP/closure.txt")"
+
+          substituters="https://cache.nixos.org https://niri.cachix.org https://nix-community.cachix.org https://catppuccin.cachix.org https://nixpkgs-python.cachix.org"
+          check() {
+            local p=$1
+            for s in $substituters; do
+              if nix path-info --store "$s" "$p" > /dev/null 2>&1; then
+                return 0
+              fi
+            done
+            return 1
+          }
+          export -f check
+          export substituters
+          xargs -P 16 -I{} bash -c 'check "$@"' _ < "$RUNNER_TEMP/closure.txt" > "$RUNNER_TEMP/missing.txt" || true
+          echo "==> Missing from every substituter: $(wc -l < "$RUNNER_TEMP/missing.txt")"
+          if [ -s "$RUNNER_TEMP/missing.txt" ]; then
+            cachix push w1ngd1nga5ter < "$RUNNER_TEMP/missing.txt"
+          fi
 
   cache:
     needs: checks
