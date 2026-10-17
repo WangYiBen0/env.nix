@@ -1551,6 +1551,7 @@ dependencies = [
  "base64 0.23.1",
  "chrono",
  "glob",
+ "http",
  "ipnet",
  "libc",
  "parking_lot",
@@ -1610,6 +1611,7 @@ dependencies = [
  "libmimalloc-sys",
  "libsystemd",
  "lru",
+ "md-5",
  "mimalloc",
  "nix 0.31.3",
  "parking_lot",
@@ -1627,6 +1629,7 @@ dependencies = [
  "serde_json",
  "serde_path_to_error",
  "serde_yaml",
+ "sha1 0.11.0",
  "sha2 0.11.0",
  "socket2",
  "stats_alloc",
@@ -1702,11 +1705,13 @@ dependencies = [
  "rand 0.10.3",
  "rcgen",
  "serde",
+ "serde_json",
  "sha1 0.11.0",
  "sha2 0.11.0",
  "sha3",
  "shake",
  "socket2",
+ "stats_alloc",
  "thiserror",
  "tokio",
  "tokio-boring",
@@ -2777,7 +2782,7 @@ dependencies = [
 [[package]]
 name = "quinn"
 version = "0.11.12"
-source = "git+https://github.com/Glassyiris/quinn?rev=47852e8b#47852e8b4809311b1ba28e709df2338754c86c06"
+source = "git+https://github.com/Glassyiris/quinn?rev=b29ded20#b29ded2045ebff03f74855b7921123a03fbc2abe"
 dependencies = [
  "bytes",
  "cfg_aliases",
@@ -2797,7 +2802,7 @@ dependencies = [
 [[package]]
 name = "quinn-proto"
 version = "0.11.19"
-source = "git+https://github.com/Glassyiris/quinn?rev=47852e8b#47852e8b4809311b1ba28e709df2338754c86c06"
+source = "git+https://github.com/Glassyiris/quinn?rev=b29ded20#b29ded2045ebff03f74855b7921123a03fbc2abe"
 dependencies = [
  "aws-lc-rs",
  "bytes",
@@ -2821,7 +2826,7 @@ dependencies = [
 [[package]]
 name = "quinn-udp"
 version = "0.5.16"
-source = "git+https://github.com/Glassyiris/quinn?rev=47852e8b#47852e8b4809311b1ba28e709df2338754c86c06"
+source = "git+https://github.com/Glassyiris/quinn?rev=b29ded20#b29ded2045ebff03f74855b7921123a03fbc2abe"
 dependencies = [
  "cfg_aliases",
  "libc",

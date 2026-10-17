@@ -20,8 +20,8 @@ let
   # Upstream has not tagged the native-API work yet; the doona-facing
   # release train pins a commit of the `native-api` branch, dated to
   # match upstream's own `debug.2026.10.4` build id.
-  rev = "5e726a9c0c98864d05550c235b326cad83abc006";
-  commitDate = "2026-10-04";
+  rev = "995a80cd87e780a2a4d63b75008dca70876857b4";
+  commitDate = "2026-10-15";
 
   # crates/honk-ebpf pins nightly-2026-07-20 for rustup users, but that
   # nightly's toolchain tarballs have since been removed from every
@@ -51,8 +51,8 @@ rustPlatform.buildRustPackage (finalAttrs: {
   version = "0-unstable-${commitDate}";
 
   src = fetchurl {
-    url = "https://github.com/daeuniverse/honk/archive/${rev}.tar.gz";
-    hash = "sha256-a51hl6b2II+t5Gk1o3UGAVQTqMw2ToLsb0d9IkvyMIE=";
+    url = "https://github.com/Glassyiris/honk/archive/${rev}.tar.gz";
+    hash = "sha256-DCuC/g0p9iGz+GiIwjGPA1G9x5N3YOGvNN2a+F9LqD0=";
   };
 
   cargoDeps = rustPlatform.importCargoLock {
@@ -61,9 +61,9 @@ rustPlatform.buildRustPackage (finalAttrs: {
     # one commit, hence one hash.
     outputHashes = {
       "boring-sys-5.2.0" = "sha256-VG0POjZdA2JazFt1jFe4UfdO01Pw7E1EC/7u8fOmfBs=";
-      "quinn-0.11.12" = "sha256-MgI08bMW4Y6famGiARFUIBTELeFt2U5qBNnvhrS/yZg=";
-      "quinn-proto-0.11.19" = "sha256-MgI08bMW4Y6famGiARFUIBTELeFt2U5qBNnvhrS/yZg=";
-      "quinn-udp-0.5.16" = "sha256-MgI08bMW4Y6famGiARFUIBTELeFt2U5qBNnvhrS/yZg=";
+      "quinn-0.11.12" = "sha256-UIv8chgSqA94r9u+r89z2DsLvdjPJoVJ9llIKvrrX90=";
+      "quinn-proto-0.11.19" = "sha256-UIv8chgSqA94r9u+r89z2DsLvdjPJoVJ9llIKvrrX90=";
+      "quinn-udp-0.5.16" = "sha256-UIv8chgSqA94r9u+r89z2DsLvdjPJoVJ9llIKvrrX90=";
     };
   };
 
@@ -232,27 +232,22 @@ rustPlatform.buildRustPackage (finalAttrs: {
     set -euo pipefail
     export PATH="${lib.makeBinPath [ jq ]}:$PATH"
 
-    # nix-update cannot follow an untagged branch channel, so walk the
-    # head of `native-api` by hand. GH_TOKEN (the workflow's github.token)
-    # keeps the call above the shared-runner IP rate limit; without it the
-    # request runs unauthenticated.
+    # The doona-facing native-api work lives on the Glassyiris fork's
+    # feat/native-api branch (Zakkaus — doona's author — contributes there;
+    # daeuniverse deleted their own native-api branch without merging it).
+    # Walk its head by hand; nix-update cannot follow an untagged branch.
+    # GH_TOKEN dodges the shared-runner IP rate limit.
     tmp=$(mktemp)
     code=$(curl -sS -o "$tmp" -w '%{http_code}' \
       ''${GH_TOKEN:+-H "Authorization: Bearer ''$GH_TOKEN"} \
-      https://api.github.com/repos/daeuniverse/honk/commits/native-api)
+      https://api.github.com/repos/Glassyiris/honk/commits/feat/native-api)
     if [ "$code" = 404 ] || [ "$code" = 422 ]; then
-      # Upstream deleted the branch (2026-10): the pin stays on the last
-      # native-api commit until the branch returns or the pin is rethought.
-      echo "honk: the native-api branch is gone upstream; skipping auto-update" >&2
+      echo "honk: feat/native-api is gone from the Glassyiris fork; skipping auto-update" >&2
       exit 0
     fi
     [ "$code" = 200 ] || { echo "error: GitHub API returned HTTP $code" >&2; exit 1; }
-    json=$(cat "$tmp")
-    rev=$(echo "$json" | jq -r .sha)
-    date=$(echo "$json" | jq -r .commit.author.date | cut -dT -f1)
-
-    src="https://github.com/daeuniverse/honk/archive/$rev.tar.gz"
-    sri=$(nix hash to-sri --type sha256 "$(nix-prefetch-url "$src")")
+    rev=$(jq -r .sha "$tmp")
+    date=$(jq -r .commit.author.date "$tmp" | cut -dT -f1)
 
     expr=pkgs/by-name/ho/honk/package.nix
     [ -f "$expr" ] || { echo "run this from the flake root" >&2; exit 1; }
@@ -261,20 +256,60 @@ rustPlatform.buildRustPackage (finalAttrs: {
       -e "s|rev = \"[0-9a-f]\{40\}\"|rev = \"$rev\"|" \
       -e "s|commitDate = \"[0-9-]*\"|commitDate = \"$date\"|" \
       "$expr"
-    # The src hash sits on the line after the archive URL.
+
+    # Refresh the src archive hash and the pinned Cargo.locks from the new
+    # source, then repair the importCargoLock outputHashes through the
+    # build-error loop so the update lands build-verified.
+    src="https://github.com/Glassyiris/honk/archive/$rev.tar.gz"
+    prefetch=$(nix store prefetch-file --json "$src")
+    sri=$(echo "$prefetch" | jq -r .hash)
+    storepath=$(echo "$prefetch" | jq -r .storePath)
+    srcdir=$(mktemp -d)
+    tar -xzf "$storepath" -C "$srcdir"
+    treedir=$(echo "$srcdir"/honk-*)
+
+    cp "$treedir/Cargo.lock" pkgs/by-name/ho/honk/Cargo.lock
+    cp "$treedir/crates/honk-ebpf/Cargo.lock" pkgs/by-name/ho/honk/ebpf-Cargo.lock
+
+    # The src hash sits on the line after the archive URL. Flag-based
+    # matching — a getline here would swallow the URL line into $0.
+    inurl=0
     awk -v sri="$sri" '
-      /archive\/\$rev\.tar\.gz/ { getline; sub(/hash = "[^"]*"/, "hash = \"" sri "\"") }
+      /Glassyiris\/honk\/archive\// { inurl = 1 }
+      inurl == 1 && /hash =/ { sub(/hash = "sha256-DCuC/g0p9iGz+GiIwjGPA1G9x5N3YOGvNN2a+F9LqD0="]*"/, "hash = \"" sri "\""); inurl = 0 }
       { print }
     ' "$expr" > "$expr.tmp" && mv "$expr.tmp" "$expr"
 
-    echo "Updated to $rev ($date), src $sri"
-    echo "Cargo.lock and outputHashes may also need refreshing."
+    # importCargoLock outputHashes cannot be computed outside a build;
+    # repair them from the hash-mismatch errors instead.
+    err=$(mktemp)
+    for i in $(seq 1 8); do
+      if nix build --no-link ".#packages.x86_64-linux.honk" 2>"$err"; then
+        echo ">> honk builds against $rev"
+        rm -rf "$srcdir" "$err" "$tmp"
+        exit 0
+      fi
+      specified=$(awk '/^[[:space:]]*specified:/{print $2; exit}' "$err")
+      got=$(awk '/^[[:space:]]*got:/{print $2; exit}' "$err")
+      if [ -z "$specified" ] || [ -z "$got" ]; then
+        echo "error: nix build failed without a hash mismatch:" >&2
+        cat "$err" >&2
+        rm -rf "$srcdir" "$err" "$tmp"
+        exit 1
+      fi
+      echo ">> repairing $specified -> $got"
+      sed -i "s|$specified|$got|" "$expr"
+    done
+    echo "error: hash mismatches did not settle after 8 repair rounds:" >&2
+    cat "$err" >&2
+    rm -rf "$srcdir" "$err" "$tmp"
+    exit 1
   '';
 
   meta = {
     description = "eBPF transparent proxy core that powers the doona UI";
     homepage = "https://github.com/daeuniverse/honk";
-    changelog = "https://github.com/daeuniverse/honk/commits/native-api";
+    changelog = "https://github.com/Glassyiris/honk/commits/feat/native-api";
     license = lib.licenses.gpl3Only;
     platforms = lib.platforms.linux;
     mainProgram = "honk-core";
