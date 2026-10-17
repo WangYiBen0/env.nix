@@ -578,11 +578,11 @@
         "spotx-bash": "spotx-bash"
       },
       "locked": {
-        "lastModified": 1792063985,
-        "narHash": "sha256-vvalzix+LicpaQw8Vu1sW6TujEIdUpvWpSgsqawZCxY=",
+        "lastModified": 1792185144,
+        "narHash": "sha256-7QeNoLfGzU1RVAotvsZnSLWg1JyQSQ0GQKN5Rq7lYoY=",
         "owner": "SpotX-Official",
         "repo": "SpotX-Nix",
-        "rev": "8c1721d1314a7ce0139938d5f26fef2c7627442d",
+        "rev": "d87ec69a7195d7df69a993ee7d34dcbf0e24ed52",
         "type": "github"
       },
       "original": {
@@ -594,11 +594,11 @@
     "spotx-bash": {
       "flake": false,
       "locked": {
-        "lastModified": 1791481402,
-        "narHash": "sha256-ElkmUv3deDpaNy9hRB2xQl1HH19ybSiArscvi0ZZZ98=",
+        "lastModified": 1792169926,
+        "narHash": "sha256-N8oNT+7K2XSxO6xPPeZac6Zq76OJNDFy3ts3NyqDiOU=",
         "owner": "SpotX-Official",
         "repo": "SpotX-Bash",
-        "rev": "d7c7b60f318f03884c02b4254e7bfd1701f17b70",
+        "rev": "d09abef54106251e51fad0b753513af34a8fa5c0",
         "type": "github"
       },
       "original": {
@@ -655,11 +655,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1791587008,
-        "narHash": "sha256-LOIfH4MtVc2KIFQI8ElOOgmgrgUzJjfx3OYu4VnTvIU=",
+        "lastModified": 1792192561,
+        "narHash": "sha256-XNE80BcOYerOY/+2bfmVk1Sik7FYq7ID9mbtXTeqDN0=",
         "owner": "0xc000022070",
         "repo": "zen-browser-flake",
-        "rev": "a6359784912804e2bad0826b63454cf4493e885e",
+        "rev": "733154388e22e459c7e6dd14e6522069bbf25971",
         "type": "github"
       },
       "original": {
