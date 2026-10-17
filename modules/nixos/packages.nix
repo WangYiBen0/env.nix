@@ -66,6 +66,7 @@ lib.mkIf config.machine.modules.packages.enable {
     obs-studio
     chafa
     hyperfine
+    bubblewrap
 
     # develop
     gcc

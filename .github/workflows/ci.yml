@@ -135,9 +135,10 @@ jobs:
 
           # If shared/global inputs changed, rebuild everything.
           # (The `*` glob in installables is unsupported here, so enumerate
-          #  package attribute names explicitly.)
+          #  package attribute names explicitly. The function's stdout is
+          #  captured by mapfile — keep all human-readable echoes at the
+          #  call sites, never inside it.)
           build_all() {
-            echo "==> Global inputs changed, building all packages"
             mapfile -t all_pkgs < <(nix eval .#packages.x86_64-linux --apply builtins.attrNames --json | sed -e 's/\[//' -e 's/\]//' -e 's/,/\n/g' -e 's/"//g' -e 's/ //g')
             for p in "${all_pkgs[@]}"; do
               echo ".#packages.x86_64-linux.$p"
@@ -149,6 +150,7 @@ jobs:
           # bump entirely) have no before-ref — rebuild everything.
           before="${{ github.event.before }}"
           if [ -z "$before" ] || [ "$before" = "0000000000000000000000000000000000000000" ]; then
+            echo "==> Dispatched run, building all packages"
             mapfile -t build_list < <(build_all)
           else
             changed="$(git diff --name-only "$before" "${{ github.sha }}")"
@@ -157,6 +159,7 @@ jobs:
 
             build_list=()
             if echo "$changed" | grep -qE '^(flake\.nix|flake\.lock|outputs/|overlays/|lib/|modules/)'; then
+              echo "==> Global inputs changed, building all packages"
               mapfile -t build_list < <(build_all)
             else
               for d in $(find pkgs -name package.nix -exec dirname {} \;); do
@@ -166,6 +169,18 @@ jobs:
               done
             fi
           fi
+
+          # Defensive: only `.#...` installables may reach `nix build`. A stray
+          # log line swallowed into build_list once did, and nix failed trying
+          # to stat it as a path ("getting status of ...").
+          filtered=()
+          for installable in "${build_list[@]}"; do
+            case "$installable" in
+              .#*) filtered+=("$installable") ;;
+              *) echo "::warning title=skipped non-installable::not an installable: $installable" ;;
+            esac
+          done
+          build_list=("${filtered[@]}")
 
           if [ ${#build_list[@]} -eq 0 ]; then
             echo "==> Nothing to build"
