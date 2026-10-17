@@ -7,7 +7,7 @@
 
 lib.mkIf config.machine.modules.nix.enable {
   nix = {
-    package = pkgs.lix;
+    package = pkgs.lixPackageSets.lix_2_96.lix;
 
     settings = {
       experimental-features = [

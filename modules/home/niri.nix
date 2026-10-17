@@ -1,8 +1,16 @@
 { config, lib, ... }:
 
 lib.mkIf config.machine.modules.niri.enable {
+  home.activation.mkNiriConfDir = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    mkdir -p ${config.xdg.configHome}/niri/conf.d/
+    touch -a ${config.xdg.configHome}/niri/conf.d/'*'.kdl
+  '';
+
   wayland.windowManager.niri = {
     enable = true;
+    extraConfig = ''
+      include optional=true "${config.xdg.configHome}/niri/conf.d/*.kdl"
+    '';
     settings = {
       # Input configuration
       input = {
