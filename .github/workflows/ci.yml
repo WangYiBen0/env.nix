@@ -77,7 +77,18 @@ jobs:
             installables+=(".#homeConfigurations.\"$h\".activationPackage")
           done
           echo "==> Building ${#installables[@]} closure(s)"
-          nix build --no-link --print-out-paths "${installables[@]}" | tee "$RUNNER_TEMP/closure-outs.txt"
+          : > "$RUNNER_TEMP/closure-outs.txt"
+          # Build one closure at a time, keeping a gc root on each out path:
+          # the combined closures push the runner's disk/RAM ceiling, and the
+          # single-invocation build keeps getting the runner torn down
+          # (exit 143) mid-copy since the last nixpkgs bump.
+          i=0
+          for installable in "${installables[@]}"; do
+            i=$((i + 1))
+            echo "==> [$i/${#installables[@]}] $installable"
+            nix build --no-link --print-out-paths -o "$RUNNER_TEMP/gcroot-$i" "$installable" | tee -a "$RUNNER_TEMP/closure-outs.txt"
+            df -h /
+          done
 
       # Everything already served by a substituter is skipped; the rest
       # would have to be rebuilt on every machine and lands in Cachix.
