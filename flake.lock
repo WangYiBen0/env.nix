@@ -294,11 +294,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1791951554,
-        "narHash": "sha256-7ZMKTSse+BxmGiQ+isxga/biFfaEpEgYSRvv2efdCWY=",
+        "lastModified": 1792295076,
+        "narHash": "sha256-cI7nldj6D1f4QLN9y82sqCA7kERAcrwD7/F9i89PhmY=",
         "owner": "fufexan",
         "repo": "nix-gaming",
-        "rev": "b3d035dbc65250f6990ac526b0c9e188fe853856",
+        "rev": "8bfba80f57356cc26eba4e5d7b8a595e70e87a00",
         "type": "github"
       },
       "original": {
@@ -578,11 +578,11 @@
         "spotx-bash": "spotx-bash"
       },
       "locked": {
-        "lastModified": 1792185144,
-        "narHash": "sha256-7QeNoLfGzU1RVAotvsZnSLWg1JyQSQ0GQKN5Rq7lYoY=",
+        "lastModified": 1792298329,
+        "narHash": "sha256-qWel04iieNY6EJ4px6DIFBhpnHdQowdh/eZ8FjyQ1wM=",
         "owner": "SpotX-Official",
         "repo": "SpotX-Nix",
-        "rev": "d87ec69a7195d7df69a993ee7d34dcbf0e24ed52",
+        "rev": "77b1def9ab6730201c23f37a3656edb26bbc2147",
         "type": "github"
       },
       "original": {
