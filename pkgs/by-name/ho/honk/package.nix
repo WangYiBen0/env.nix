@@ -272,13 +272,17 @@ rustPlatform.buildRustPackage (finalAttrs: {
     cp "$treedir/crates/honk-ebpf/Cargo.lock" pkgs/by-name/ho/honk/ebpf-Cargo.lock
 
     # The src hash sits on the line after the archive URL. Flag-based
-    # matching — a getline here would swallow the URL line into $0.
+    # matching — a getline here would swallow the URL line into $0. The
+    # old value must never be part of the pattern: base64 hashes may
+    # contain `/`, which terminates the awk regex literal early.
     inurl=0
     awk -v sri="$sri" '
-      /Glassyiris\/honk\/archive\// { inurl = 1 }
-      inurl == 1 && /hash =/ { sub(/hash = "sha256-DCuC/g0p9iGz+GiIwjGPA1G9x5N3YOGvNN2a+F9LqD0="]*"/, "hash = \"" sri "\""); inurl = 0 }
+      /Glassyiris\/honk\/archive\// { inurl = 1; print; next }
+      inurl == 1 && /hash =/ { sub(/hash = "[^"]*"/, "hash = \"" sri "\""); inurl = 0; print; next }
+      inurl == 1 { inurl = 0 }
       { print }
-    ' "$expr" > "$expr.tmp" && mv "$expr.tmp" "$expr"
+    ' "$expr" > "$expr.tmp"
+    mv "$expr.tmp" "$expr"
 
     # importCargoLock outputHashes cannot be computed outside a build;
     # repair them from the hash-mismatch errors instead.

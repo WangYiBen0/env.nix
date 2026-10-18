@@ -165,11 +165,23 @@ jobs:
           # nix-update exits non-zero via an uncaught VersionError when the
           # newest release is unstable but --version=unstable is not requested;
           # treat that like "no update" instead of failing the run.
+          # nix-update resolves the flake source through `nix flake metadata
+          # --json`, whose reported store path is only materialized lazily by
+          # the fetcher. On the installed upstream Nix nothing forces that
+          # copy, so every eval nix-update runs AFTER the update script has
+          # modified the tree dies with `opening file ...-source: No such file
+          # or directory`. Drop the store-path indirection: eval.nix then
+          # falls back to `builtins.getFlake <working tree>`, which fetches on
+          # demand on every Nix (the update-expr.nix above already relies on
+          # exactly that). All three call sites in nix-update handle `None`.
           cat > "$RUNNER_TEMP/nix-update-wrapper.py" <<'EOF'
           import sys
 
           from nix_update import main
           from nix_update.errors import VersionError
+          from nix_update.options import Options
+
+          Options.get_flake_import_path = lambda self: None
 
           try:
               main(sys.argv[1:])
