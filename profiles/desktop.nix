@@ -32,6 +32,7 @@ lib.mkIf config.machine.profiles.desktop {
     ime.enable = true;
     launcher.enable = true;
     theme.enable = true;
+    wallpaper.enable = true;
     directory.enable = true;
     variable.enable = true;
     deepseek-harness.enable = true;

@@ -14,6 +14,23 @@
       ime.enable = lib.mkEnableOption "input method (fcitx5)";
       launcher.enable = lib.mkEnableOption "application launcher (fuzzel)";
       theme.enable = lib.mkEnableOption "desktop theme (GTK/Qt/catppuccin)";
+      wallpaper = {
+        enable = lib.mkEnableOption "static wallpaper for the niri session";
+        backend = lib.mkOption {
+          type = lib.types.enum [
+            "wpaperd"
+            "swaybg"
+            "awww"
+          ];
+          default = "wpaperd";
+          description = "lightweight wallpaper backend to start with the niri session";
+        };
+        image = lib.mkOption {
+          type = lib.types.path;
+          default = ../../wallpapers/scarlet-forest.png;
+          description = "static wallpaper image; defaults to the repository wallpapers/ directory";
+        };
+      };
       directory.enable = lib.mkEnableOption "XDG user directories";
       variable.enable = lib.mkEnableOption "desktop environment variables";
       compat.enable = lib.mkEnableOption "compatibility tools (nix-ld, flatpak, etc.)";
