@@ -39,6 +39,20 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community,catppuccin,niri,nixpkgs-python
 
+      # The full host closures push ~25 GB into /nix/store, which alone is
+      # more than the runner's free disk; since the flake.lock nixpkgs bump
+      # the closure step has been dying mid-download with the runner being
+      # torn down (exit 143). Reclaim the preinstalled toolchains first.
+      - name: Free runner disk
+        run: |
+          set -euo pipefail
+          df -h /
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+            /usr/local/.ghcup /opt/hostedtoolcache/CodeQL \
+            /usr/local/share/boost /usr/share/swift
+          sudo docker image prune --force || true
+          df -h /
+
       - name: Check
         env:
           NIXPKGS_ALLOW_UNFREE: "1"
