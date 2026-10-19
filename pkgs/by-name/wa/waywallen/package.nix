@@ -99,7 +99,7 @@ let
         outputHashAlgo = "sha256";
         outputHashMode = "recursive";
         # Local check: nix hash path on a scratch `lito fetch --output` tree.
-        outputHash = "sha256-u4vGIyoHI3jdfbaSYtfypcwaklu0gYrT4YK+Ru8En/w=";
+        outputHash = "sha256-HJPwYr7Lfh8/HizbB3akUcIPGXwUqXHQ0pHwS8ketZg=";
 
         env.LITO_ALLOWED_ROOTS = "/nix/store:/build";
         # stdenv pins SSL_CERT_FILE=/no-cert-file.crt inside fixed-output
@@ -156,13 +156,21 @@ let
         # fixed-output derivations forbid. The samples are inert.
         find "$TMPDIR/bundle" -path '*/.git/hooks/*' -type f -delete
 
-        # The bundled checkouts' .git/index (working-tree stat timestamps)
-        # and .git/logs (reflog timestamps) differ on every fetch, which
-        # makes the bundle hash nondeterministic. Lito only ever runs
-        # `git rev-parse HEAD` against these checkouts, which needs neither
-        # the index nor the reflog — drop both so the FOD hashes stably.
+        # The bundled checkouts carry NO git objects of their own — lito
+        # wires them to its $HOME git db through .git/objects/info/alternates
+        # (a path containing $HOME, hence different per environment), and
+        # .git/index and .git/logs embed per-run stat/reflog timestamps.
+        # All of that makes the bundle hash vary between machines and runs.
+        # Lito only ever runs `git rev-parse --verify HEAD` on bundle
+        # checkouts, and HEAD is a detached raw sha that needs neither the
+        # index, the reflog, nor any object — drop the lot so the bundle is
+        # just the worktree plus deterministic metadata.
         find "$TMPDIR/bundle" -path '*/.git/index' -delete
         find "$TMPDIR/bundle" -type d -path '*/.git/logs' -exec rm -rf {} +
+        find "$TMPDIR/bundle" -maxdepth 4 -name 'FETCH_HEAD' -path '*/.git/*' -delete
+        find "$TMPDIR/bundle" -maxdepth 4 -name 'ORIG_HEAD' -path '*/.git/*' -delete
+        find "$TMPDIR/bundle" -maxdepth 4 -name 'COMMIT_EDITMSG' -path '*/.git/*' -delete
+        find "$TMPDIR/bundle" -type d -path '*/.git/objects' -exec rm -rf {} +
 
         mkdir -p "$out"
         cp -r "$TMPDIR/bundle/." "$out/"
