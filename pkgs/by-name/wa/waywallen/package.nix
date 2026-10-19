@@ -99,16 +99,26 @@ let
         outputHashAlgo = "sha256";
         outputHashMode = "recursive";
         # Local check: nix hash path on a scratch `lito fetch --output` tree.
-        outputHash = "sha256-4sV2Clz85WsnAz8jEZiVL8v/YMLvlT42nNe0XNf7snU=";
+        outputHash = "sha256-u4vGIyoHI3jdfbaSYtfypcwaklu0gYrT4YK+Ru8En/w=";
 
         env.LITO_ALLOWED_ROOTS = "/nix/store:/build";
         # stdenv pins SSL_CERT_FILE=/no-cert-file.crt inside fixed-output
-        # derivations (anti-exfiltration measure), which breaks lito's curl
-        # subprocess with exit 77. CURL_CA_BUNDLE takes precedence over
-        # SSL_CERT_FILE in libcurl, so point it at the real CA bundle.
-        env.CURL_CA_BUNDLE = "${cacert}/etc/ssl/certs/ca-bundle.crt";
+        # derivations (anti-exfiltration measure). On NixOS the sandbox still
+        # mounts the host CA bundle, but on vanilla nix (e.g. the GitHub
+        # runners of the Update pkgs workflow) it does not, so TLS inside
+        # this FOD dies with "unable to get local issuer certificate".
+        # Exported inside the script below (after setup.sh's own pinning):
+        # curl reads CURL_CA_BUNDLE, git reads GIT_SSL_CAINFO, and nixpkgs
+        # libcurl honors NIX_SSL_CERT_FILE.
+        env.cacertBundle = "${cacert}/etc/ssl/certs/ca-bundle.crt";
       }
       ''
+        # CA setup for every TLS consumer in this FOD (see env.cacertBundle).
+        export CURL_CA_BUNDLE="$cacertBundle"
+        export GIT_SSL_CAINFO="$cacertBundle"
+        export NIX_SSL_CERT_FILE="$cacertBundle"
+        export SSL_CERT_FILE="$cacertBundle"
+
         export HOME=$TMPDIR/home
         mkdir -p "$HOME"
 
@@ -145,6 +155,14 @@ let
         # .git/hooks and make the FOD output reference store paths, which
         # fixed-output derivations forbid. The samples are inert.
         find "$TMPDIR/bundle" -path '*/.git/hooks/*' -type f -delete
+
+        # The bundled checkouts' .git/index (working-tree stat timestamps)
+        # and .git/logs (reflog timestamps) differ on every fetch, which
+        # makes the bundle hash nondeterministic. Lito only ever runs
+        # `git rev-parse HEAD` against these checkouts, which needs neither
+        # the index nor the reflog — drop both so the FOD hashes stably.
+        find "$TMPDIR/bundle" -path '*/.git/index' -delete
+        find "$TMPDIR/bundle" -type d -path '*/.git/logs' -exec rm -rf {} +
 
         mkdir -p "$out"
         cp -r "$TMPDIR/bundle/." "$out/"
