@@ -99,7 +99,7 @@ let
         outputHashAlgo = "sha256";
         outputHashMode = "recursive";
         # Local check: nix hash path on a scratch `lito fetch --output` tree.
-        outputHash = "sha256-HJPwYr7Lfh8/HizbB3akUcIPGXwUqXHQ0pHwS8ketZg=";
+        outputHash = "sha256-Le7jqPDgZ/AHSPLqj4frhhvc1UkaMEw25RYMX9eX3YE=";
 
         env.LITO_ALLOWED_ROOTS = "/nix/store:/build";
         # stdenv pins SSL_CERT_FILE=/no-cert-file.crt inside fixed-output
@@ -159,18 +159,29 @@ let
         # The bundled checkouts carry NO git objects of their own — lito
         # wires them to its $HOME git db through .git/objects/info/alternates
         # (a path containing $HOME, hence different per environment), and
-        # .git/index and .git/logs embed per-run stat/reflog timestamps.
-        # All of that makes the bundle hash vary between machines and runs.
-        # Lito only ever runs `git rev-parse --verify HEAD` on bundle
-        # checkouts, and HEAD is a detached raw sha that needs neither the
-        # index, the reflog, nor any object — drop the lot so the bundle is
-        # just the worktree plus deterministic metadata.
+        # .git/index, .git/logs and .git/config (whose remote url embeds
+        # $HOME) all vary per run and per machine. Lito only ever runs
+        # `git rev-parse --verify HEAD` on bundle checkouts, and HEAD is a
+        # detached raw sha that needs neither the index, the reflog, the
+        # config, nor any object — strip all of that, KEEPING an empty
+        # .git/objects so the checkout stays a valid repository (git would
+        # otherwise walk up to whatever enclosing repository it finds).
         find "$TMPDIR/bundle" -path '*/.git/index' -delete
         find "$TMPDIR/bundle" -type d -path '*/.git/logs' -exec rm -rf {} +
+        find "$TMPDIR/bundle" -name config -path '*/.git/*' -delete
         find "$TMPDIR/bundle" -maxdepth 4 -name 'FETCH_HEAD' -path '*/.git/*' -delete
         find "$TMPDIR/bundle" -maxdepth 4 -name 'ORIG_HEAD' -path '*/.git/*' -delete
         find "$TMPDIR/bundle" -maxdepth 4 -name 'COMMIT_EDITMSG' -path '*/.git/*' -delete
-        find "$TMPDIR/bundle" -type d -path '*/.git/objects' -exec rm -rf {} +
+        for objectsDir in $(find "$TMPDIR/bundle" -type d -path '*/.git/objects'); do
+          rm -rf "$objectsDir"
+          mkdir -p "$objectsDir"
+        done
+
+        # The registry index cache records every version the Registry served
+        # at fetch time, so it drifts whenever upstream publishes; the lock
+        # plus the v1/registry/source archives are all an offline frozen
+        # build needs — drop the index.
+        rm -rf "$TMPDIR/bundle/v1/registry/index"
 
         mkdir -p "$out"
         cp -r "$TMPDIR/bundle/." "$out/"
