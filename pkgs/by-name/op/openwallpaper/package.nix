@@ -20,8 +20,10 @@
   cmake,
   fetchgit,
   glib,
+  git,
   gobject-introspection,
   gtk4,
+  jq,
   libGL,
   libadwaita,
   libpulseaudio,
@@ -36,6 +38,7 @@
   pkgsCross,
   portaudio,
   python3,
+  curl,
   shaderc,
   symlinkJoin,
   vulkan-headers,
@@ -43,6 +46,7 @@
   wayland,
   wayland-scanner,
   wrapGAppsHook4,
+  writeShellScript,
 }:
 
 let
@@ -296,6 +300,80 @@ symlinkJoin {
     wpeCompile
     owui
   ];
+
+  passthru = {
+    # The top-level derivation is a symlinkJoin without a src of its own;
+    # expose the fetchgit tree so tooling (nix-update's file detection,
+    # `nix build .#openwallpaper.src`) can see it.
+    inherit src;
+
+    # Upstream has no tags, so nix-update's generic version detection
+    # cannot work (--use-update-script fails with "could not find a url").
+    # Walk the default branch HEAD by hand, like honk's updateScript, and
+    # repair the fetchgit + Go vendor hashes through the build-error loop
+    # so every update lands build-verified. GH_TOKEN dodges the
+    # shared-runner IP rate limit.
+    updateScript = writeShellScript "update-openwallpaper" ''
+      set -euo pipefail
+      export PATH="${
+        lib.makeBinPath [
+          jq
+          curl
+          git
+        ]
+      }:$PATH"
+
+      tmp=$(mktemp)
+      code=$(curl -sS -o "$tmp" -w '%{http_code}' \
+        ''${GH_TOKEN:+-H "Authorization: Bearer ''$GH_TOKEN"} \
+        https://api.github.com/repos/mechakotik/openwallpaper/commits/main)
+      [ "$code" = 200 ] || { echo "error: GitHub API returned HTTP $code" >&2; exit 1; }
+      rev=$(jq -r .sha "$tmp")
+      date=$(jq -r .commit.author.date "$tmp" | cut -dT -f1)
+      rm -f "$tmp"
+
+      expr=pkgs/by-name/op/openwallpaper/package.nix
+      [ -f "$expr" ] || { echo "run this from the flake root" >&2; exit 1; }
+
+      old=$(sed -n 's/^  rev = "\(.*\)";$/\1/p' "$expr")
+      if [ "$rev" = "$old" ]; then
+        echo ">> openwallpaper is already at $rev"
+        exit 0
+      fi
+
+      sed -i \
+        -e "s|rev = \"[0-9a-f]\{40\}\"|rev = \"$rev\"|" \
+        -e "s|commitDate = \"[0-9-]*\"|commitDate = \"$date\"|" \
+        "$expr"
+
+      # Repair the fetchgit hash and the Go vendor hashes from the
+      # hash-mismatch errors instead of prefetching (the submodule tree
+      # makes prefetching awkward, and the loop lands build-verified).
+      err=$(mktemp)
+      for i in $(seq 1 8); do
+        if NIXPKGS_ALLOW_UNFREE=1 nix build --no-link \
+             ".#packages.x86_64-linux.openwallpaper" 2>"$err"; then
+          echo ">> openwallpaper builds against $rev"
+          rm -f "$err"
+          exit 0
+        fi
+        specified=$(awk '/^[[:space:]]*specified:/{print $2; exit}' "$err")
+        got=$(awk '/^[[:space:]]*got:/{print $2; exit}' "$err")
+        if [ -z "$specified" ] || [ -z "$got" ]; then
+          echo "error: nix build failed without a hash mismatch:" >&2
+          cat "$err" >&2
+          rm -f "$err"
+          exit 1
+        fi
+        echo ">> repairing $specified -> $got"
+        sed -i "s|$specified|$got|" "$expr"
+      done
+      echo "error: hash mismatches did not settle after 8 repair rounds:" >&2
+      cat "$err" >&2
+      rm -f "$err"
+      exit 1
+    '';
+  };
 
   nativeBuildInputs = [ makeWrapper ];
 
