@@ -20,8 +20,8 @@ let
   # Upstream has not tagged the native-API work yet; the doona-facing
   # release train pins a commit of the `native-api` branch, dated to
   # match upstream's own `debug.2026.10.4` build id.
-  rev = "423fef29c15d10f4f21e93d161dfc33f32e532ca";
-  commitDate = "2026-10-19";
+  rev = "b71b6b65d4d81d4fa5795468b70ce9a37bb0e7dc";
+  commitDate = "2026-10-20";
 
   # crates/honk-ebpf pins nightly-2026-07-20 for rustup users, but that
   # nightly's toolchain tarballs have since been removed from every
@@ -52,7 +52,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
 
   src = fetchurl {
     url = "https://github.com/Glassyiris/honk/archive/${rev}.tar.gz";
-    hash = "sha256-OVme+eYdFToNBIWg4ee6QBVDji7/JnMS5TtLLQNK6Vs=";
+    hash = "sha256-/EsrxHsX2qjLp+zBAdz5+MF/XeB7f2eLOGShob5kpaw=";
   };
 
   cargoDeps = rustPlatform.importCargoLock {
