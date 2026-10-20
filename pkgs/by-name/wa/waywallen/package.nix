@@ -35,7 +35,7 @@
 }:
 
 let
-  version = "0.4.4";
+  version = "0.5.0";
   # tag v0.4.4; pinned as a full commit so fetchFromGitHub skips the
   # rate-limited GitHub tag-resolution API.
   rev = "f42cb1a6b12301dfd1b46e1ef1cfbce6140bc5d3";
