@@ -79,10 +79,10 @@ lib.mkIf config.machine.modules.packages.enable {
     rustfmt
     python3
     texliveFull
-    # graalvm-oracle-25's installCheck runs jshell, which segfaults (exit
-    # 139) during JVM startup on GitHub-hosted runners — it passes on real
-    # hardware (verified locally and in daily use). The canary cannot run
-    # there, so skip it to keep the CI closure build alive.
+    # graalvm-oracle-25's installCheck canary (jshell) segfaults with exit
+    # 139 both locally and on GitHub runners on nixpkgs' 25.0.3 build —
+    # skip it until upstream fixes the check, to keep builds and the CI
+    # closure alive.
     (graalvmPackages.graalvm-oracle.overrideAttrs (_: {
       doInstallCheck = false;
     }))
