@@ -10,6 +10,7 @@ lib.mkIf config.machine.profiles.desktop {
     desktop.enable = true;
     compat.enable = true;
     honk.enable = true;
+    nixpak.enable = true;
 
     # NixOS base
     system.enable = true;

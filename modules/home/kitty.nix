@@ -40,12 +40,6 @@ lib.mkIf config.machine.modules.kitty.enable {
       # 复制
       "ctrl+c" = "copy_or_interrupt";
 
-      # 搜索（使用自定义 kitten）
-      "ctrl+f" =
-        "launch --location=hsplit --allow-remote-control kitty +kitten search.py @active-kitty-window-id";
-      "kitty_mod+f" =
-        "launch --location=hsplit --allow-remote-control kitty +kitten search.py @active-kitty-window-id";
-
       # 滚动
       "page_up" = "scroll_page_up";
       "page_down" = "scroll_page_down";
@@ -60,17 +54,5 @@ lib.mkIf config.machine.modules.kitty.enable {
       "ctrl+0" = "change_font_size all 0";
       "ctrl+kp_0" = "change_font_size all 0";
     };
-  };
-
-  xdg.configFile = {
-    "kitty/scroll_mark.py".source = ./kitty/scroll_mark.py;
-    "kitty/search.py".source = ./kitty/search.py;
-  };
-
-  # 确保 kitten 脚本可执行
-  home.activation = {
-    makeKittensExecutable = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      chmod +x ${config.home.homeDirectory}/.config/kitty/kittens/*.py 2>/dev/null || true
-    '';
   };
 }

@@ -95,9 +95,6 @@ lib.mkIf config.machine.modules.packages.enable {
     nix-index
     nix-inspect
     manix
-
-    # apps
-    dingtalk
   ];
 
   environment.variables = {

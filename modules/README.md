@@ -30,20 +30,24 @@ machine.modules.font.enable = true;
 
 All `machine.*` options are defined in `modules/common/options.nix` (single source of truth). Profiles set module options, and modules check their own enable options.
 
+Directories are imported by `lib.scanNixFiles`, which loads every `.nix` file through `haumea` and keeps the directory's own `default.nix` out of the result. Two consequences: a directory may not share its name with a sibling file (both would map to the same attribute), and `_`-prefixed files stay private instead of being imported as modules.
+
 ## What Each Module Enables
 
 ### NixOS Modules
 
-| Module   | Option                            | Description                                                       |
-| -------- | --------------------------------- | ----------------------------------------------------------------- |
-| desktop  | `machine.modules.desktop.enable`  | Desktop session: plasma + niri, desktop apps, firewall exceptions |
-| font     | `machine.modules.font.enable`     | System fonts (Noto, Maple Mono, JetBrains Mono, …)                |
-| compat   | `machine.modules.compat.enable`   | nix-ld, flatpak, podman, Wine                                     |
-| honk     | `machine.modules.honk.enable`     | honk transparent proxy + doona web UI                             |
-| system   | `machine.modules.system.enable`   | Base system: kernel, timezone, locale, boot                       |
-| services | `machine.modules.services.enable` | Base services: PipeWire, SSH, bluetooth, printing                 |
-| packages | `machine.modules.packages.enable` | System packages (shared with the HM side)                         |
-| nix      | `machine.modules.nix.enable`      | Nix settings, caches, GC (shared with common/ and HM)             |
+| Module       | Option                                | Description                                                       |
+| ------------ | ------------------------------------- | ----------------------------------------------------------------- |
+| desktop      | `machine.modules.desktop.enable`      | Desktop session: plasma + niri, desktop apps, firewall exceptions |
+| font         | `machine.modules.font.enable`         | System fonts (Noto, Maple Mono, JetBrains Mono, …)                |
+| compat       | `machine.modules.compat.enable`       | nix-ld, flatpak, podman, Wine                                     |
+| honk         | `machine.modules.honk.enable`         | honk transparent proxy + doona web UI                             |
+| system       | `machine.modules.system.enable`       | Base system: kernel, timezone, locale, boot                       |
+| services     | `machine.modules.services.enable`     | Base services: PipeWire, SSH, bluetooth, printing                 |
+| packages     | `machine.modules.packages.enable`     | System packages (shared with the HM side)                         |
+| nix          | `machine.modules.nix.enable`          | Nix settings, caches, GC (shared with common/ and HM)             |
+| nixpak       | `machine.modules.nixpak.enable`       | Bubblewrap sandbox for closed-source apps (dingtalk)              |
+| impermanence | `machine.modules.impermanence.enable` | Bind-mounts state from `/persist` (preservation)                  |
 
 #### honk options
 
@@ -69,6 +73,65 @@ subscription in the UI, saving) fail with 422 "Configuration validation failed".
 
 honk needs Linux 6.12+, a bpffs mount at `/sys/fs/bpf`, and runs as root.
 Reach the UI from another machine by setting `api.listen` to a LAN address.
+
+#### nixpak
+
+`machine.modules.nixpak.enable` takes `dingtalk` out of
+`environment.systemPackages` and installs a [nixpak](https://github.com/nixpak/nixpak)
+wrapper instead: the same application behind bubblewrap, with a private
+`$HOME` under `~/.local/share/nixpak/`, no access to the real home directory,
+and only the D-Bus surface a desktop app needs (notifications, portals, the
+fcitx IME, the status notifier). `~/Downloads` stays writable so received files
+land where the user expects them.
+
+The wrapper keeps the package name, so launchers and `xdg-open` still find it.
+The sandbox home starts empty, so the first launch looks like a fresh install,
+and anything the app would store elsewhere in the real home stays invisible to
+it.
+
+QQ is deliberately not sandboxed: `pkgs.linuxqq` is Tencent's own
+Wayland-optimised build and already talks to the compositor, the IME and the
+portal correctly, so interposing bubblewrap only puts a layer between the app
+and plumbing that works.
+
+Everything the sandboxes are allowed to touch lives in `desktopSandbox` in
+[`nixos/nixpak.nix`](nixos/nixpak.nix) — that is the list to widen if an app
+turns out to need another D-Bus name (tray icon, clipboard), another socket, or
+another directory. The launcher also needs a Go build the first time; it is
+fetched from `proxy.golang.org`, so a network that blocks it needs `GOPROXY`
+pointed elsewhere.
+
+#### impermanence
+
+`machine.modules.impermanence.enable` turns the state list in
+[`nixos/preservation.nix`](nixos/preservation.nix) into bind mounts from
+`/persist`, using [preservation](https://github.com/nix-community/preservation).
+Off by default and inert while off: `/` is still a persistent subvolume, so this
+is prep work for making the root ephemeral later. `/home` is its own subvolume,
+so user data is deliberately not in the list.
+
+The mount is declared in the host's `disko.nix` (that is also what creates the
+subvolume on a fresh install), and the module asserts it exists instead of
+guessing — a missing `/persist` would let the bind mounts read from the
+ephemeral root and the state would silently land in the wrong place.
+`sxyz-89` is the host with it switched on, which means an **existing** system
+needs the subvolume created once before the first switch:
+
+```bash
+dev=$(findmnt -no SOURCE /)                # the btrfs root, whatever its name
+sudo mount -o subvol=/ "$dev" /mnt
+sudo btrfs subvolume create /mnt/nixos/@persist   # `@persist` on hosts without the nixos/ prefix
+sudo umount /mnt
+
+# seed it with the state that already exists, otherwise the first boot starts empty
+sudo mount -o subvol=nixos/@persist "$dev" /persist
+sudo mkdir -p /persist/var/lib /persist/etc/ssh
+sudo rsync --archive --hard-links --acls --xattrs /var/lib/{nixos,NetworkManager,bluetooth,flatpak,containers,docker,honk} /persist/var/lib/
+sudo cp -a /etc/ssh/ssh_host_* /persist/etc/ssh/
+sudo umount /persist
+```
+
+The live CD below boots into a system with the tools for exactly this job.
 
 ### Home Manager Modules
 
@@ -118,6 +181,8 @@ modules/
 │   ├── packages.nix          # System packages
 │   ├── services.nix          # PipeWire, SSH, Bluetooth, firewall
 │   ├── honk.nix              # honk proxy + doona web UI (gated: machine.modules.honk.enable)
+│   ├── nixpak.nix            # dingtalk sandbox (gated: machine.modules.nixpak.enable)
+│   ├── preservation.nix      # /persist bind mounts (gated: machine.modules.impermanence.enable)
 │   ├── compat.nix            # nix-ld, flatpak, podman, Wine (gated: machine.modules.compat.enable)
 │   ├── font.nix              # System fonts (gated: machine.modules.font.enable)
 │   └── desktop.nix           # Desktop session bundle (gated: machine.modules.desktop.enable)

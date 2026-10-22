@@ -7,6 +7,8 @@
 | `nixosConfigurations.<host>`       | NixOS system configs (NixOS module HM included)                    |
 | `homeConfigurations.<user>@<host>` | Standalone HM configs (for debugging)                              |
 | `packages.<system>`                | Custom packages built from `pkgs/` (fonts, agent, etc.)            |
+| `images.<system>.livecd`           | Bootable rescue/live ISO (see below)                               |
+| `images.<system>.livecd-vm`        | Same rescue system as a runnable VM (see below)                    |
 | `overlays.default`                 | Project overlay (adds custom packages to nixpkgs)                  |
 | `lib`                              | Custom lib (scanNixFiles, scanPackages, listSubDir, lastAfterDash) |
 | `formatter.<system>`               | nixfmt                                                             |
@@ -30,6 +32,36 @@ Standalone Home Manager configurations are also generated:
 ```bash
 nh home switch -- --flake .#w1ngd1nga5ter@matebook16d
 ```
+
+## Live CD
+
+`images.<system>.livecd` builds a minimal installer image with the tools this
+fleet's repair jobs need (btrfs-progs, disko, lsof, rsync, smartmontools) plus
+sshd for the headless case — see [`hosts/x86_64-linux/livecd.nix`](../hosts/x86_64-linux/livecd.nix).
+It is deliberately neither a `nixosConfiguration` nor a package: CI builds every
+one of those on an `outputs/` change, and a ~1.5 GB image should not be in either
+list. `nix flake check` only warns about the unknown output.
+
+```bash
+nix build .#images.x86_64-linux.livecd
+sudo dd if=result/iso/nixos-livecd-*.iso of=/dev/sdX bs=4M status=progress oflag=sync
+```
+
+Console login is root with no password (from the installer profile); ssh accepts
+root with the key in the module only.
+
+The same system also builds as a VM, which is the cheap way to poke at the
+rescue environment without writing a USB stick:
+
+```bash
+nix build .#images.x86_64-linux.livecd-vm
+./result/bin/run-livecd-vm
+```
+
+It runs headless (`virtualisation.vmVariant` in [`images.nix`](images.nix) sets
+`graphics = false`), so the console is the serial line; `NIX_DISK_IMAGE=` and
+`QEMU_OPTS=` override the throwaway disk and QEMU flags. Without `/dev/kvm`
+QEMU falls back to TCG and the boot takes a couple of minutes.
 
 ## Custom Packages
 
@@ -79,7 +111,7 @@ New overlay files added to `overlays/` are automatically picked up.
    - Boot configuration
    - `state-version.nix`
 
-The build system auto-discovers hosts, architectures, and users via `lib.scanNixFiles`, `lib.listSubDir`, and `lib.scanPackages`.
+The build system auto-discovers hosts, architectures, and users via `lib.scanNixFiles`, `lib.listSubDir`, and `lib.packagesFromByName`. `lib.scanNixFiles` is backed by `haumea`: it loads every module in a directory and drops the directory's own `default.nix`, so a subdirectory that grows its own module is picked up without editing the scan.
 
 ## Flake Inputs
 

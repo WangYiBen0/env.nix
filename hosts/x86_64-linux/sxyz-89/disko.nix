@@ -74,6 +74,14 @@
                       "nodatacow"
                     ];
                   };
+                  # State that must survive an ephemeral root: the bind mounts
+                  # in modules/nixos/preservation.nix read from here. Disko only
+                  # creates it on install, so an existing system needs
+                  # `btrfs subvolume create` once (see modules/README.md).
+                  "nixos/@persist" = {
+                    mountpoint = "/persist";
+                    mountOptions = [ "compress=zstd" ];
+                  };
                 };
               };
             };

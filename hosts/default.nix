@@ -1,6 +1,9 @@
 { nixpkgs, ... }@inputs:
 let
-  myLib = import ../lib nixpkgs.lib;
+  myLib = import ../lib {
+    inherit (nixpkgs) lib;
+    haumea = inputs.haumea.lib;
+  };
   allSystems = myLib.listSubDir ./.;
 
   linuxSystems = builtins.filter (system: (myLib.lastAfterDash system) == "linux") allSystems;

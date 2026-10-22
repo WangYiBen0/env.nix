@@ -6,13 +6,16 @@
 }@args:
 let
   inherit (nixpkgs) lib;
-  myLib = import ../../lib nixpkgs.lib;
-  hosts = myLib.listSubDir ./.;
   # inputs 是 flake 传入的全部 inputs（不包含我们自己加的 system 和 hmSharedModules）
   inputs = removeAttrs args [
     "system"
     "hmSharedModules"
   ];
+  myLib = import ../../lib {
+    inherit lib;
+    haumea = inputs.haumea.lib;
+  };
+  hosts = myLib.listSubDir ./.;
 in
 lib.genAttrs hosts (
   hostname:

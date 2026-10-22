@@ -29,21 +29,28 @@ lib.mkIf config.machine.modules.desktop.enable {
   };
 
   environment = {
-    systemPackages = with pkgs; [
-      linuxqq
-      dingtalk
-      telegram-desktop
+    systemPackages =
+      (with pkgs; [
+        telegram-desktop
 
-      fuzzel
-      swaylock
-      kdePackages.plasma-browser-integration
-      kdePackages.partitionmanager
-      gnome-tweaks
-      libreoffice-qt
-      inkscape
+        fuzzel
+        swaylock
+        kdePackages.plasma-browser-integration
+        kdePackages.partitionmanager
+        gnome-tweaks
+        libreoffice-qt
+        inkscape
 
-      chromium
-    ];
+        chromium
+
+        # Tencent's own Wayland-optimised build, and the one closed-source
+        # app the nixpak module deliberately leaves alone (see
+        # modules/nixos/nixpak.nix for why).
+        linuxqq
+      ])
+      # Closed-source app that treats $HOME as its own; when the nixpak module
+      # is on it installs a sandboxed version instead.
+      ++ lib.optionals (!config.machine.modules.nixpak.enable) (with pkgs; [ dingtalk ]);
 
     plasma6.excludePackages = with pkgs.kdePackages; [
       dolphin

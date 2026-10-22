@@ -10,3 +10,6 @@ result-*
 
 # Ignore automatically generated pre-commit-config
 .pre-commit-config.yaml
+
+# Ignore transient lock files left behind by file-editing tooling
+.dsh-ops-*.lock

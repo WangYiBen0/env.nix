@@ -5,7 +5,10 @@
   ...
 }@inputs:
 let
-  myLib = import ../lib/default.nix nixpkgs.lib;
+  myLib = import ../lib/default.nix {
+    inherit (nixpkgs) lib;
+    haumea = inputs.haumea.lib;
+  };
   allSystems = myLib.listSubDir ./.;
   forAllSystems = func: (nixpkgs.lib.genAttrs allSystems func);
 
@@ -38,6 +41,7 @@ in
   checks = import ./checks.nix args;
   devShells = import ./devShells.nix args;
   packages = import ./packages.nix args;
+  images = import ./images.nix args;
 
   lib = myLib;
   overlays.default = import ../overlays inputs;

@@ -46,6 +46,8 @@
       editor.enable = lib.mkEnableOption "nixvim editor";
       yazi.enable = lib.mkEnableOption "yazi file manager";
       nix-index.enable = lib.mkEnableOption "nix-index with comma";
+      nixpak.enable = lib.mkEnableOption "NixPak sandbox for the closed-source dingtalk client";
+      impermanence.enable = lib.mkEnableOption "preservation of state onto the /persist subvolume (needs it to exist)";
     };
   };
 }
