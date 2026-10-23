@@ -41,7 +41,6 @@ in
   checks = import ./checks.nix args;
   devShells = import ./devShells.nix args;
   packages = import ./packages.nix args;
-  images = import ./images.nix args;
 
   lib = myLib;
   overlays.default = import ../overlays inputs;

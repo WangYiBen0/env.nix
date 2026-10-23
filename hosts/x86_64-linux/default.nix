@@ -35,3 +35,16 @@ lib.genAttrs hosts (
     ];
   }
 )
+# The rescue image is a NixOS system too, just one without a host directory:
+# livecd.nix is a module file next to them, so `listSubDir` above never sees
+# it. Keeping it here (rather than in a separate flake output) means
+# `nix flake check` understands it and `nixos-anywhere --flake .#livecd` works,
+# and both artefacts hang off the config instead of a private output:
+#   nix build .#nixosConfigurations.livecd.config.system.build.isoImage
+#   nix build .#nixosConfigurations.livecd.config.system.build.vm
+// {
+  livecd = lib.nixosSystem {
+    inherit system;
+    modules = [ ./livecd.nix ];
+  };
+}

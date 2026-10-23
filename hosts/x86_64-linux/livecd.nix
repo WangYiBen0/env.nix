@@ -4,11 +4,12 @@
   pkgs,
   ...
 }:
-# The rescue/live image. Exposed as `images.<system>.livecd` (outputs/images.nix)
-# and deliberately a module file next to default.nix rather than a host
-# directory: hosts here are discovered by listing this directory, and every
-# discovered host becomes a `nixosConfiguration` that CI builds in full — the
-# last thing that build needs is a 1.5 GB ISO closure.
+# The rescue/live image, exposed as `nixosConfigurations.livecd` (minted in
+# default.nix next to the host directories). A module file rather than a host
+# directory because it is a system, not a machine: nothing ever switches to it.
+#
+#   nix build .#nixosConfigurations.livecd.config.system.build.isoImage
+#   nix build .#nixosConfigurations.livecd.config.system.build.vm
 {
   imports = [ "${modulesPath}/installer/cd-dvd/installation-cd-minimal.nix" ];
 
@@ -66,4 +67,18 @@
   # Shown by the boot menu and by ssh, so it is obvious which system answered.
   networking.hostName = lib.mkDefault "livecd";
   isoImage.edition = lib.mkForce "livecd";
+
+  # The same system booted as a throwaway VM, which is the cheap way to poke at
+  # the rescue environment without writing a USB stick. The knobs belong under
+  # vmVariant: qemu-vm.nix is only imported into that deferred module (see
+  # nixos/modules/virtualisation/build-vm.nix, which aliases system.build.vm to
+  # the variant), so `virtualisation.graphics` does not exist in this config.
+  virtualisation.vmVariant = {
+    virtualisation = {
+      graphics = false;
+      memorySize = 2048;
+      diskSize = 4096;
+    };
+    boot.kernelParams = [ "console=ttyS0,115200" ];
+  };
 }
