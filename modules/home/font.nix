@@ -15,9 +15,12 @@ lib.mkIf config.machine.modules.font.enable {
       smiley-sans
       lxgw-wenkai
       lxgw-wenkai-screen
-      lxgw-neoxihei
+      # The "+" build rather than nixpkgs' lxgw-neoxihei: it fills in CJK
+      # Extension A, so the GB 18030-2022 level-2 range is complete.
+      lxgw-neoxihei-plus
       lxgw-neozhisong
       lxgw-zhenkai
+      sotyr-fangsong
       zhuque-fangsong
     ])
     ++ (with inputs.apple-fonts.packages.${pkgs.stdenv.hostPlatform.system}; [
@@ -37,7 +40,7 @@ lib.mkIf config.machine.modules.font.enable {
         ];
         sansSerif = [
           "SF Pro Display"
-          "LXGW Neo XiHei"
+          "LXGW Neo XiHei Plus"
           "Noto Sans CJK SC"
         ];
         monospace = [
@@ -88,14 +91,14 @@ lib.mkIf config.machine.modules.font.enable {
               <match target="pattern">
                 <test name="family" compare="contains"><string>黑体</string></test>
                 <edit name="family" mode="prepend" binding="strong">
-                  <string>LXGW Neo XiHei</string>
+                  <string>LXGW Neo XiHei Plus</string>
                 </edit>
               </match>
 
               <match target="pattern">
                 <test name="family" compare="contains"><string>SimHei</string></test>
                 <edit name="family" mode="prepend" binding="strong">
-                  <string>LXGW Neo XiHei</string>
+                  <string>LXGW Neo XiHei Plus</string>
                 </edit>
               </match>
 

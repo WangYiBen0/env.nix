@@ -9,6 +9,10 @@ dae = "dae"
 daed = "daed"
 Sur = "Sur"
 lazer = "lazer"
+# Sotyr Fangsong (仲春仿宋) — the upstream project name; typos reads it as a
+# misspelling of "satyr"/"story".
+Sotyr = "Sotyr"
+sotyr = "sotyr"
 
 [default.extend-identifiers]
 W1ngD1nGa5ter = "W1ngD1nGa5ter"

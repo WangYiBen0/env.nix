@@ -65,19 +65,21 @@ QEMU falls back to TCG and the boot takes a couple of minutes.
 
 ## Custom Packages
 
-Custom packages live in `pkgs/` and are auto-discovered by `lib.scanPackages`:
+Custom packages live in `pkgs/by-name/`, mirroring the nixpkgs layout: a
+two-letter shard directory holding `<name>/package.nix`, discovered by
+`lib.packagesFromByName` and exposed as `packages.<system>.<name>`.
 
 ```
-pkgs/
-├── fonts/
-│   ├── lxgw-neozhisong/   # LXGW Neo ZhiSong
-│   ├── lxgw-zhenkai/      # LXGW ZhenKai Slab GB
-│   └── zhuque-fangsong/   # Zhuque FangSong
-├── networking/
-│   ├── honk/              # honk transparent proxy engine
-│   └── doona/             # doona web UI for honk
-└── agent/
-    └── miyu/              # Miyu AI agent
+pkgs/by-name/
+├── lx/
+│   ├── lxgw-neoxihei-plus/  # LXGW Neo XiHei Plus (CJK Ext-A filled in)
+│   ├── lxgw-neozhisong/     # LXGW Neo ZhiSong
+│   └── lxgw-zhenkai/        # LXGW ZhenKai Slab GB
+├── so/sotyr-fangsong/       # Sotyr Fangsong (仲春仿宋)
+├── zh/zhuque-fangsong/      # Zhuque FangSong
+├── do/doona/                # doona web UI for honk
+├── ho/honk/                 # honk transparent proxy engine
+└── mi/miyu/                 # Miyu AI agent
 ```
 
 Build individual packages:
