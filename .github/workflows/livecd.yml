@@ -1,0 +1,141 @@
+name: livecd
+
+# Periodic rescue image. It is built from the same nixosConfiguration the
+# machines use and published as a release asset, so a broken laptop can be
+# fixed from a USB stick without cloning this repo anywhere first.
+on:
+  schedule:
+    # Monday 03:17 UTC. Off the hour on purpose: GitHub's scheduler queues
+    # everyone's "0 3 * * 1" at the same moment.
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write # create the release and upload its assets
+  id-token: write
+
+# A second run would only race the first one's release; let it finish.
+concurrency:
+  group: livecd
+  cancel-in-progress: false
+
+env:
+  ISO_INSTALLABLE: .#nixosConfigurations.livecd.config.system.build.isoImage
+  RELEASE_PREFIX: livecd-
+  # Old images are ~1.5 GB each; GitHub's release storage is not a backup
+  # target, so only the newest few are kept around.
+  KEEP_RELEASES: "4"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v22
+        with:
+          determinate: false
+          extra-conf: |
+            access-tokens = github.com=${{ github.token }}
+            experimental-features = nix-command flakes
+
+      - name: Set up Cachix
+        uses: cachix/cachix-action@v17
+        with:
+          name: w1ngd1nga5ter
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community
+
+      # The image pulls an installer closure plus the repair tooling; between
+      # that and the squashfs the runner's default 14 GB root filesystem is
+      # not enough headroom. Same trimming as ci.yml.
+      - name: Free runner disk
+        run: |
+          set -euo pipefail
+          df -h /
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+            /usr/local/.ghcup /opt/hostedtoolcache/CodeQL \
+            /usr/local/share/boost /usr/share/swift
+          sudo docker image prune --force || true
+          df -h /
+
+      - name: Build the image
+        id: build
+        run: |
+          set -euo pipefail
+          out=$(nix build --print-out-paths -L "$ISO_INSTALLABLE")
+          echo "out=$out" >> "$GITHUB_OUTPUT"
+          ls -l "$out/iso"
+
+      - name: Prepare assets
+        id: assets
+        run: |
+          set -euo pipefail
+          iso=$(ls "${{ steps.build.outputs.out }}"/iso/*.iso)
+          # GitHub rejects a single asset over 2 GiB. The image is well under
+          # that today; if it ever grows, gzip it here and name the asset .iso.gz.
+          size=$(stat -c%s "$iso")
+          if [ "$size" -ge $((2 * 1024 * 1024 * 1024)) ]; then
+            echo "::error::$(basename "$iso") is $size bytes, over GitHub's 2 GiB asset limit"
+            exit 1
+          fi
+          # Relative name inside the checksum file, so a downloader can run
+          # `sha256sum -c` in the directory the two assets landed in.
+          (cd "$(dirname "$iso")" && sha256sum "$(basename "$iso")" > "$iso.sha256")
+          {
+            echo "iso=$iso"
+            echo "sha256=$iso.sha256"
+            echo "name=$(basename "$iso")"
+            echo "size_mb=$((size / 1024 / 1024))"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${RELEASE_PREFIX}$(date -u +%Y%m%d)"
+          # Re-dispatching on the same day rebuilds rather than dies on an
+          # existing tag.
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release delete "$tag" --yes --cleanup-tag
+          fi
+          sed 's/^ *//' > "$RUNNER_TEMP/notes.md" <<EOF
+          Rescue/live image built from \`nixosConfigurations.livecd\`.
+
+          | | |
+          | --- | --- |
+          | source commit | \`${{ github.sha }}\` |
+          | nixpkgs | \`$(jq -r '.nodes.nixpkgs.locked.rev' flake.lock)\` |
+          | asset | \`${{ steps.assets.outputs.name }}\` (${{ steps.assets.outputs.size_mb }} MiB) |
+          | sha256 | \`$(cut -d' ' -f1 "${{ steps.assets.outputs.sha256 }}")\` |
+
+          Write it to a USB stick and boot it:
+
+          \`\`\`bash
+          sha256sum -c ${{ steps.assets.outputs.name }}.sha256
+          sudo dd if=${{ steps.assets.outputs.name }} of=/dev/sdX bs=4M status=progress oflag=sync
+          \`\`\`
+
+          Console login is root with no password; ssh accepts root with the key in
+          [\`hosts/x86_64-linux/livecd.nix\`](https://github.com/${{ github.repository }}/blob/main/hosts/x86_64-linux/livecd.nix).
+          EOF
+          gh release create "$tag" \
+            --title "livecd $(date -u +%F)" \
+            --notes-file "$RUNNER_TEMP/notes.md" \
+            "${{ steps.assets.outputs.iso }}" \
+            "${{ steps.assets.outputs.sha256 }}"
+
+      # Keep the newest KEEP_RELEASES images; older tags are deleted with
+      # --cleanup-tag so the tag list stays readable too.
+      - name: Prune old releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release list --limit 100 --json tagName --jq '.[].tagName' \
+            | grep "^${RELEASE_PREFIX}" | sort | head -n -"$KEEP_RELEASES" \
+            | xargs -r -n1 gh release delete --yes --cleanup-tag || true
