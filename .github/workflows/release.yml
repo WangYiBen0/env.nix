@@ -126,8 +126,11 @@ jobs:
           sudo dd if=${{ steps.assets.outputs.name }} of=/dev/sdX bs=4M status=progress oflag=sync
           \`\`\`
 
-          Console login is root with no password; ssh accepts root with the key in
-          [\`hosts/x86_64-linux/livecd.nix\`](https://github.com/${{ github.repository }}/blob/main/hosts/x86_64-linux/livecd.nix).
+          The console auto-logs in as \`nixos\` with an empty password. No key is
+          baked into the image, so to reach it over ssh add
+          \`live.nixos.passwd=<password>\` to the kernel command line at the boot
+          menu and log in as \`nixos\`. Root stays key-only and accepts no key.
+          See [\`hosts/x86_64-linux/livecd.nix\`](https://github.com/${{ github.repository }}/blob/main/hosts/x86_64-linux/livecd.nix).
           EOF
           gh release create "$tag" \
             --title "LiveCD $(date -u +%F)" \
