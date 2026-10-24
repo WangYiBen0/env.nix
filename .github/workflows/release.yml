@@ -1,4 +1,4 @@
-name: LiveCD
+name: Release
 
 # Periodic rescue image. It is built from the same nixosConfiguration the
 # machines use and published as a release asset, so a broken laptop can be
@@ -16,7 +16,7 @@ permissions:
 
 # A second run would only race the first one's release; let it finish.
 concurrency:
-  group: livecd
+  group: release
   cancel-in-progress: false
 
 env:
@@ -75,20 +75,25 @@ jobs:
         run: |
           set -euo pipefail
           iso=$(ls "${{ steps.build.outputs.out }}"/iso/*.iso)
+          name=$(basename "$iso")
           # GitHub rejects a single asset over 2 GiB. The image is well under
           # that today; if it ever grows, gzip it here and name the asset .iso.gz.
           size=$(stat -c%s "$iso")
           if [ "$size" -ge $((2 * 1024 * 1024 * 1024)) ]; then
-            echo "::error::$(basename "$iso") is $size bytes, over GitHub's 2 GiB asset limit"
+            echo "::error::$name is $size bytes, over GitHub's 2 GiB asset limit"
             exit 1
           fi
-          # Relative name inside the checksum file, so a downloader can run
-          # `sha256sum -c` in the directory the two assets landed in.
-          (cd "$(dirname "$iso")" && sha256sum "$(basename "$iso")" > "$iso.sha256")
+          # The image lives in /nix/store, which the runner mounts read-only, so
+          # the checksum cannot be written next to it (the first run of this
+          # workflow died on exactly that). Keep it in the runner temp directory
+          # and record the bare file name, so a downloader can still run
+          # `sha256sum -c` in the directory both assets landed in.
+          sha256="$RUNNER_TEMP/$name.sha256"
+          printf '%s  %s\n' "$(sha256sum "$iso" | cut -d' ' -f1)" "$name" > "$sha256"
           {
             echo "iso=$iso"
-            echo "sha256=$iso.sha256"
-            echo "name=$(basename "$iso")"
+            echo "name=$name"
+            echo "sha256=$sha256"
             echo "size_mb=$((size / 1024 / 1024))"
           } >> "$GITHUB_OUTPUT"
 
