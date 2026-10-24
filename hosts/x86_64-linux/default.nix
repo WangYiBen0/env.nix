@@ -45,6 +45,12 @@ lib.genAttrs hosts (
 // {
   livecd = lib.nixosSystem {
     inherit system;
+    # Same argument set as the hosts: the shared modules read `self`, `myLib`
+    # and `inputs` (see modules/common/default.nix and modules/nixos/default.nix).
+    specialArgs = (removeAttrs args [ "hmSharedModules" ]) // {
+      hostname = "livecd";
+      inherit myLib inputs;
+    };
     modules = [ ./livecd.nix ];
   };
 }
