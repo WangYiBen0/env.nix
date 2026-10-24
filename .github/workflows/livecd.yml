@@ -1,13 +1,13 @@
-name: livecd
+name: LiveCD
 
 # Periodic rescue image. It is built from the same nixosConfiguration the
 # machines use and published as a release asset, so a broken laptop can be
 # fixed from a USB stick without cloning this repo anywhere first.
 on:
   schedule:
-    # Monday 03:17 UTC. Off the hour on purpose: GitHub's scheduler queues
-    # everyone's "0 3 * * 1" at the same moment.
-    - cron: "17 3 * * 1"
+    # Saturday 08:17 UTC (16:17 Asia/Shanghai). Off the hour on purpose:
+    # GitHub's scheduler queues everyone's "0 * * * *" at the same moment.
+    - cron: "17 8 * * 6"
   workflow_dispatch:
 
 permissions:
@@ -21,7 +21,7 @@ concurrency:
 
 env:
   ISO_INSTALLABLE: .#nixosConfigurations.livecd.config.system.build.isoImage
-  RELEASE_PREFIX: livecd-
+  RELEASE_PREFIX: LiveCD-
   # Old images are ~1.5 GB each; GitHub's release storage is not a backup
   # target, so only the newest few are kept around.
   KEEP_RELEASES: "4"
@@ -35,7 +35,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v22
+        uses: DeterminateSystems/nix-installer-action@v23
         with:
           determinate: false
           extra-conf: |
@@ -124,7 +124,7 @@ jobs:
           [\`hosts/x86_64-linux/livecd.nix\`](https://github.com/${{ github.repository }}/blob/main/hosts/x86_64-linux/livecd.nix).
           EOF
           gh release create "$tag" \
-            --title "livecd $(date -u +%F)" \
+            --title "LiveCD $(date -u +%F)" \
             --notes-file "$RUNNER_TEMP/notes.md" \
             "${{ steps.assets.outputs.iso }}" \
             "${{ steps.assets.outputs.sha256 }}"
