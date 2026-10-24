@@ -21,7 +21,8 @@ concurrency:
 
 env:
   ISO_INSTALLABLE: .#nixosConfigurations.livecd.config.system.build.isoImage
-  RELEASE_PREFIX: LiveCD-
+  # Tags are bare dates (20261031): the release title already says LiveCD, and
+  # the only other tags in this repository belong to the package bot.
   # Old images are ~1.5 GB each; GitHub's release storage is not a backup
   # target, so only the newest few are kept around.
   KEEP_RELEASES: "4"
@@ -102,7 +103,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          tag="${RELEASE_PREFIX}$(date -u +%Y%m%d)"
+          tag=$(date -u +%Y%m%d)
           # Re-dispatching on the same day rebuilds rather than dies on an
           # existing tag.
           if gh release view "$tag" >/dev/null 2>&1; then
@@ -141,6 +142,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          # The pattern also matches the LiveCD-<date> tag created before the
+          # prefix was dropped, so that one release still ages out.
           gh release list --limit 100 --json tagName --jq '.[].tagName' \
-            | grep "^${RELEASE_PREFIX}" | sort | head -n -"$KEEP_RELEASES" \
+            | grep -E '^(LiveCD-)?[0-9]{8}$' | sort | head -n -"$KEEP_RELEASES" \
             | xargs -r -n1 gh release delete --yes --cleanup-tag || true
