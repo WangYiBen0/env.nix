@@ -7,11 +7,11 @@
 
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "lxgw-neoxihei-plus";
-  version = "1.307";
+  version = "1.308";
 
   src = fetchurl {
     url = "https://github.com/lxgw/LxgwNeoXiHei/releases/download/v${finalAttrs.version}/LXGWNeoXiHeiPlus.ttf";
-    hash = "sha256-2DOYcdBLmm/LHrG7dFDtmvPQPt4z+4k8X6kBtH4J3nU=";
+    hash = "sha256-TcgqgNKXwKZ5/2mp10YkbddkcqhlsrKyCOXvwU8gaME=";
   };
 
   dontUnpack = true;

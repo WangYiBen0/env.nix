@@ -7,11 +7,11 @@
 
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "lxgw-neozhisong";
-  version = "1.068";
+  version = "1.070";
 
   src = fetchurl {
     url = "https://github.com/lxgw/LxgwNeoZhiSong/releases/download/v${finalAttrs.version}/LXGWNeoZhiSong.ttf";
-    hash = "sha256-rkgNWSlLajGBc+NYGljRo4XPOtRGemWQsFs3R+opKjo=";
+    hash = "sha256-xCAAtZyv/ozPzRyQqihB3K+oZs8kdpzBsQw3CMZx8gc=";
   };
 
   dontUnpack = true;
