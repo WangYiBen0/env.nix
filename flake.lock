@@ -110,7 +110,7 @@
         ]
       },
       "locked": {
-        "lastModified": 1792924900,
+        "lastModified": 1792930733,
         "narHash": "sha256-T5Omwn/IylAj4EwMo0UMoLyHyX/0iccKeG9ihErYIvY=",
         "owner": "WangYiBen0",
         "repo": "deepseek-harnix",
@@ -427,11 +427,11 @@
         "nixvim": "nixvim_2"
       },
       "locked": {
-        "lastModified": 1792774477,
-        "narHash": "sha256-ZzOIuebjHpJzv9bQRlLbs59ac+yZHHp84zvlmeAzwP8=",
+        "lastModified": 1792938338,
+        "narHash": "sha256-JCWzR8o2fCjuE9ogfAlZ7LQbghZ8AYehlYN+cwOLUY0=",
         "owner": "WangYiBen0",
         "repo": "nixvim.nix",
-        "rev": "0d85c3ed4e4a207d63f2846b110d09592028322b",
+        "rev": "a4da28f634a99d67f303cf200ba5a979751adf05",
         "type": "github"
       },
       "original": {
@@ -659,11 +659,11 @@
         "rust-overlay": []
       },
       "locked": {
-        "lastModified": 1792717250,
-        "narHash": "sha256-g0scT9NyU2URiRXtWxteFIgy0NhRGwVORHEivNHIb3w=",
+        "lastModified": 1792935713,
+        "narHash": "sha256-I0h7d0bE+5syvQdhLXafzEPVqDospcAtagC1IqBJEyM=",
         "owner": "Supreeeme",
         "repo": "xwayland-satellite",
-        "rev": "e54e34c11758696240182549fb17d58473f8a3d4",
+        "rev": "43e91dc6be074d1a88583082b2fcb0829ac36c16",
         "type": "github"
       },
       "original": {
