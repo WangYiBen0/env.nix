@@ -105,6 +105,19 @@
       };
     };
 
+    # Packaged dsh releases and the plugin builder behind the declarative
+    # `web` profile (modules/home/deepseek-harness/).
+    # Named after the repository, like every other input here (catppuccin,
+    # nixvim, haumea, …) — no abbreviation.
+    deepseek-harnix = {
+      url = "github:WangYiBen0/deepseek-harnix";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        home-manager.follows = "home-manager";
+        flake-parts.follows = "flake-parts";
+      };
+    };
+
     zen-browser = {
       url = "github:0xc000022070/zen-browser-flake/beta";
       inputs = {

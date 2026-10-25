@@ -13,7 +13,6 @@ let
   ];
   myLib = import ../../lib {
     inherit lib;
-    haumea = inputs.haumea.lib;
   };
   hosts = myLib.listSubDir ./.;
 in

@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "plugins": {
+    "archive-manager": {
+      "hash": "sha256-LYF4vdE6SLjoDzzqXTmITprth3gq9bI+HHj+zjP52FE="
+    },
+    "opencode2dsh": {
+      "hash": "sha256-QVqg7mNwQX3OLpWEmAcxE24Dvh23vMoc4wsxMKtRjtU=",
+      "npmDepsHash": "sha256-ywMHwK0cEbmQNJ6OlPSH9dhf21zyjHBxIK8rkAuocdM="
+    },
+    "dsh-im": {
+      "hash": "sha256-c48s6x1ggjk/gQj0qIBgMhe+pcgvxRBrVkXYgO39+io=",
+      "npmDepsHash": "sha256-cfwXZ1UX2ZRS/QTDT3kwEDYqwxDmJcvbgDVT0ztvNZ8="
+    },
+    "background-by-model": {
+      "hash": "sha256-q98dT/ZaDHTKFDVO0Am6ZT+WJqZWGVcB9mQ0qHH7eKo=",
+      "npmDepsHash": "sha256-7jht8MpKr57kUH6k+b9SFvTRLr8F58EEw54vcvUnKtc="
+    },
+    "chat-import": {
+      "hash": "sha256-k9l31EebK7qgtUuxjQ+n0nMatUXZYc4F8oZmgDahGso=",
+      "npmDepsHash": "sha256-0+m2oQxpzhKOFZ0VggHkMbocvG4H2MiABD4bBU3yGhs="
+    },
+    "free-search": {
+      "hash": "sha256-REPkdBkSvBBriK0Hh7l05sr6tlxQC48Y3O8i85Ea/8o=",
+      "npmDepsHash": "sha256-EY4dQl1qdA12V2Ht8FshTiBRoPeH++KDTo+DankW1u0="
+    },
+    "pocket": {
+      "hash": "sha256-qnVomvai3tEmJI4HBKtQACJNK7dVc0qgotGuy0G3ltA=",
+      "npmDepsHash": "sha256-KjgkI+Bk1hSOtyNp5ryZkCHkSG1+02lr3S18G4H52l0="
+    },
+    "market": {
+      "hash": "sha256-xPvjPRTeyEE656fTyVHsBMdWnp9w95vYy71H4tQj2mQ=",
+      "npmDepsHash": "sha256-0vAi+4pxfgy3XVnXrx35/1FRuCvqGClT13+AHnluWqQ="
+    },
+    "ops": {
+      "hash": "sha256-VHFoPSgmVZMMvNF00thyquFRec9xai1MTkmyb4JZ/Mw="
+    },
+    "tool-normalizer": {
+      "hash": "sha256-5m5vuPLsw1eyqT5SCwQDDw3sAh6Hh3w9vEHqKNx5mfw="
+    },
+    "whale-widget": {
+      "hash": "sha256-I2jegZLEuihoKmNE94rOEctBusOXwTmB4238pJwOvHg="
+    },
+    "tui": {
+      "sourceHash": "sha256-w01J4sLZUnkjZ40d+8lqUTZYnE2R3zLFNIiECclSpUs=",
+      "pnpmDepsHash": "sha256-GR9Y8avUKCO0BhV0IVG1nOHG6eDLIPjRYOkKEYh4QlE=",
+      "nestedPnpmDepsHash": "sha256-6b+GkosWdqzXbYypLghuCpB6ioMSdA4Jcr9XUs5XNX8="
+    }
+  }
+}

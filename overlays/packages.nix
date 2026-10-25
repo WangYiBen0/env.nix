@@ -2,7 +2,6 @@ inputs: _final: prev:
 let
   myLib = import ../lib/default.nix {
     inherit (inputs.nixpkgs) lib;
-    haumea = inputs.haumea.lib;
   };
 in
 myLib.packagesFromByName {

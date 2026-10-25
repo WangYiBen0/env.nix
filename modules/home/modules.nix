@@ -4,5 +4,6 @@
     nix-index-database.homeModules.nix-index
     nixvim.homeModules.nixvim
     zen-browser.homeModules.beta
+    deepseek-harnix.homeModules.default
   ];
 }

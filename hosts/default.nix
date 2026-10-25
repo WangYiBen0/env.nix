@@ -2,7 +2,6 @@
 let
   myLib = import ../lib {
     inherit (nixpkgs) lib;
-    haumea = inputs.haumea.lib;
   };
   allSystems = myLib.listSubDir ./.;
 

@@ -7,7 +7,6 @@
 let
   myLib = import ../lib/default.nix {
     inherit (nixpkgs) lib;
-    haumea = inputs.haumea.lib;
   };
   allSystems = myLib.listSubDir ./.;
   forAllSystems = func: (nixpkgs.lib.genAttrs allSystems func);
