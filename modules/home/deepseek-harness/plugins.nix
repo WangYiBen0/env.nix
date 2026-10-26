@@ -6,7 +6,7 @@
 # because they are machine-generated: bumping a version means regenerating
 # them, not hand-editing this file.
 #
-#   nix run .#dsh-plugin-lock        # or ./update-lock.sh
+#   ./update-lock.sh
 #
 # The generator resolves every entry below, reports any hash that changed or
 # appeared, and rewrites the lock. A version bump without a lock refresh fails
@@ -25,9 +25,13 @@
 }:
 
 let
-  # deepseek-harnix exposes the builder as `lib.mkDshPlugin`, bound to the
-  # evaluating system.
-  mk = args: deepseek-harnix.lib.mkDshPlugin args;
+  # deepseek-harnix's `mkDshPluginFor.<system>` is the pure form: it pins the
+  # system explicitly. The bare `lib.mkDshPlugin` reads `builtins.currentSystem`
+  # instead, which does not exist under a pure flake evaluation, so
+  # `nix flake check` died with "needs a system" the moment this flake had to
+  # evaluate the plugins. This `pkgs` is already the one the rest of the
+  # configuration is built with, so take the system from it.
+  mk = args: deepseek-harnix.lib.mkDshPluginFor.${pkgs.stdenv.hostPlatform.system} args;
 
   # `lockPath` is overridable so the lock generator can rebuild an entry
   # against a stub lock and read the hash Nix reports.
