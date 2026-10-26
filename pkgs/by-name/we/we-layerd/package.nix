@@ -33,7 +33,7 @@
   xdotool,
 }:
 let
-  # The C++ renderer that tag v0.2.9 pins as the
+  # The C++ renderer that tag v0.2.10 pins as the
   # third_party/wallpaper-engine-renderer submodule; upstream's own
   # package/nix/flake.nix references the same commit at the tag.
   rendererRev = "89dfcd86de2dc0ae537bc136046c5ed05733e7b7";
@@ -176,13 +176,13 @@ let
 in
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "we-layerd";
-  version = "0.2.9";
+  version = "0.2.10";
 
   src = fetchFromGitHub {
     owner = "Aromatic05";
     repo = "we-layerd";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-rJ2tjLh3uYnmGRCNofb3heG+9z3tI75Z2RLA1MItzwo=";
+    hash = "sha256-FOCNhY2nc0CE8TVfWvLfZsd39ARHcIl4qo1T46GDxHY=";
   };
 
   cargoLock.lockFile = ./Cargo.lock;
