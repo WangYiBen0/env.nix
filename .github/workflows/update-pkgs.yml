@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write # the update lands as a pull request: main takes no direct pushes
   id-token: write
   actions: write
 
@@ -276,21 +277,42 @@ jobs:
             printf "updated=%s\nfailed=%s\n" "${changed[*]:-}" "${failed[*]:-}" >> "$GITHUB_OUTPUT"
           '
 
-      - name: Push
-        id: push
+      # `main` is protected, so a push to it is rejected: the bot publishes its
+      # work as a pull request and a human merges it.
+      #
+      # Commits pushed with GITHUB_TOKEN do not trigger other workflows, so the
+      # CI run has to be dispatched explicitly. That dispatch is not an
+      # optimisation — the ruleset requires the `checks` status on the pull
+      # request head, and without it the pull request can never be merged.
+      - name: Open a pull request
+        id: pr
         if: steps.lock.outputs.updated == 'true' || steps.pkgs.outputs.updated != ''
-        run: |
-          git pull --rebase origin main
-          git push origin main
-          echo "pushed=true" >> "$GITHUB_OUTPUT"
-
-      # Commits pushed with GITHUB_TOKEN do not trigger other workflows,
-      # so the CI cache job has to be dispatched explicitly.
-      - name: Trigger CI cache
-        if: steps.push.outputs.pushed == 'true'
-        run: gh workflow run ci.yml --ref main
         env:
           GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          branch=bot/update-pkgs
+          git checkout -B "$branch"
+          git push --force origin "$branch"
+
+          if [ "$(gh pr list --head "$branch" --state open --json number --jq 'length')" = 0 ]; then
+            cat > "$RUNNER_TEMP/pr-body.md" <<'EOF'
+          Automated `flake.lock` and package updates from the `Update pkgs` workflow.
+
+          Opened as a pull request because `main` no longer accepts direct pushes.
+          CI is dispatched by the workflow itself; wait for `checks` before merging.
+          EOF
+            gh pr create --base main --head "$branch" \
+              --title "chore(pkgs): automated package and flake.lock updates" \
+              --body-file "$RUNNER_TEMP/pr-body.md"
+          else
+            echo "updated the existing pull request for $branch"
+          fi
+
+          # The same ref the pull request points at, so the check runs land on
+          # its head commit and satisfy the required status check.
+          gh workflow run ci.yml --ref "$branch"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
 
       # Failing here — after the Push step — makes the run red to flag the
       # broken packages without stranding the updates that did succeed.
