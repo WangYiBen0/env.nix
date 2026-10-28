@@ -7,10 +7,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write # the update lands as a pull request: main takes no direct pushes
+  contents: read
   id-token: write
-  actions: write
 
 concurrency:
   group: update-pkgs
@@ -23,12 +21,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.ref_name }}
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v23
         with:
-          # Determinate Nix tries to log in to FlakeHub when id-token: write is
-          # set; this repo publishes nowhere, so stay on vanilla Nix.
           determinate: false
           extra-conf: |
             access-tokens = github.com=${{ github.token }}
@@ -43,7 +42,7 @@ jobs:
 
       - name: Config git
         run: |
-          git checkout -B main
+          git checkout -B ${{ github.ref_name }}
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
@@ -277,21 +276,27 @@ jobs:
             printf "updated=%s\nfailed=%s\n" "${changed[*]:-}" "${failed[*]:-}" >> "$GITHUB_OUTPUT"
           '
 
+      - name: Generate GitHub App Token
+        id: app-token
+        if: steps.lock.outputs.updated == 'true' || steps.pkgs.outputs.updated != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       # `main` is protected, so a push to it is rejected: the bot publishes its
       # work as a pull request and a human merges it.
-      #
-      # Commits pushed with GITHUB_TOKEN do not trigger other workflows, so the
-      # CI run has to be dispatched explicitly. That dispatch is not an
-      # optimisation — the ruleset requires the `checks` status on the pull
-      # request head, and without it the pull request can never be merged.
       - name: Open a pull request
         id: pr
         if: steps.lock.outputs.updated == 'true' || steps.pkgs.outputs.updated != ''
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          BASE_BRANCH: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          branch=bot/update-pkgs
+          branch=bot/update-pkgs-${BASE_BRANCH}
+
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git checkout -B "$branch"
           git push --force origin "$branch"
 
@@ -300,22 +305,18 @@ jobs:
           Automated `flake.lock` and package updates from the `Update pkgs` workflow.
 
           Opened as a pull request because `main` no longer accepts direct pushes.
-          CI is dispatched by the workflow itself; wait for `checks` before merging.
+          CI is triggered by the push itself (the bot pushes with a GitHub App token),
+          so no manual workflow dispatch is needed.
           EOF
-            gh pr create --base main --head "$branch" \
-              --title "chore(pkgs): automated package and flake.lock updates" \
+            gh pr create --base $BASE_BRANCH --head "$branch" \
+              --title "chore(${BASE_BRANCH}/pkgs): automated package and flake.lock updates" \
               --body-file "$RUNNER_TEMP/pr-body.md"
           else
             echo "updated the existing pull request for $branch"
           fi
 
-          # The same ref the pull request points at, so the check runs land on
-          # its head commit and satisfy the required status check.
-          gh workflow run ci.yml --ref "$branch"
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
 
-      # Failing here — after the Push step — makes the run red to flag the
-      # broken packages without stranding the updates that did succeed.
       - name: Fail on update errors
         if: steps.pkgs.outputs.failed != ''
         run: |
