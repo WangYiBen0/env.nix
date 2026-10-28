@@ -14,7 +14,7 @@
 }:
 
 let
-  version = "0.1.0-rc.1";
+  version = "0.1.0-rc.2";
 
   # pnpm-workspace.yaml carries `allowBuilds`, so only esbuild's postinstall
   # is permitted; playwright's browser download never runs. Upstream pins
@@ -29,7 +29,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     owner = "Zakkaus";
     repo = "doona";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-0sIr256Mo82P0Wvi/kJ7QWAhJPrPb2BK/yWHIzD2/YU=";
+    hash = "sha256-8nz7ijd/SvZ8K7j+78hzToDRsLqwptCIIAAPZY7FQCE=";
   };
 
   pnpmDeps = fetchPnpmDeps {
@@ -66,8 +66,9 @@ stdenvNoCC.mkDerivation (finalAttrs: {
 
     mkdir -p $out/share/doona
 
-    # Everything in dist/ but the fonts and the Vite build manifest, which
-    # exists only to serve upstream's size check.
+    # Everything in dist/ but the fonts and the Vite metadata directory, which
+    # upstream does not ship either. It still matters: the manifest inside it
+    # is what notices.mjs reads below, straight out of the build directory.
     for entry in dist/* dist/.[!.]* dist/..?*; do
       [ -e "$entry" ] || [ -L "$entry" ] || continue
       [ "$entry" != dist/fonts ] || continue
@@ -97,7 +98,11 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   ''
   + ''
     cp LICENSE NOTICE README.md $out/share/doona/
-    node tools/notices.mjs $out/share/doona
+    # 0.1.0-rc.2 added a second argument: the bundled-package manifest Vite
+    # writes to dist/.vite/. Called with only the stage, the script prints its
+    # usage and exits 1 — which is exactly what failed the closure build on the
+    # bot's bump. Mirrors upstream's `add_notices "$stage/program" dist`.
+    node tools/notices.mjs $out/share/doona dist/.vite/bundled-packages.json
   ''
   + lib.optionalString withFonts ''
     cp -R dist/fonts $out/share/doona/fonts
