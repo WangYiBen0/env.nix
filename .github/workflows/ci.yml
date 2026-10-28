@@ -15,9 +15,18 @@ permissions:
   id-token: write
 
 jobs:
+  # The one required check, and fast on purpose. `nix flake check` evaluates
+  # every output — all four nixosConfigurations, the home configurations and
+  # the packages — and builds only the cheap `checks` outputs, which is where
+  # an eval error (a missing attribute, a bad option) is caught.
+  #
+  # Building the system and home closures for real is the expensive half
+  # (20-35 min) and lives in closures.yml, off the merge path for pull
+  # requests: it runs on main and on a pull request only when asked for with
+  # the `build-closures` label.
   checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -39,85 +48,10 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community,catppuccin,niri,nixpkgs-python
 
-      # The full host closures push ~25 GB into /nix/store, which alone is
-      # more than the runner's free disk; since the flake.lock nixpkgs bump
-      # the closure step has been dying mid-download with the runner being
-      # torn down (exit 143). Reclaim the preinstalled toolchains first.
-      - name: Free runner disk
-        run: |
-          set -euo pipefail
-          df -h /
-          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
-            /usr/local/.ghcup /opt/hostedtoolcache/CodeQL \
-            /usr/local/share/boost /usr/share/swift
-          sudo docker image prune --force || true
-          df -h /
-
       - name: Check
         env:
           NIXPKGS_ALLOW_UNFREE: "1"
         run: nix flake check
-
-      # `nix flake check` only evaluates the configurations — a build failure
-      # (stale hash, dead fetch) still passes. Build every system and home
-      # closure for real.
-      - name: Build system and home closures
-        env:
-          NIXPKGS_ALLOW_UNFREE: "1"
-        run: |
-          set -euo pipefail
-          parse() { sed -e 's/\[//' -e 's/\]//' -e 's/,/\n/g' -e 's/"//g' -e 's/ //g'; }
-          installables=()
-          mapfile -t hosts < <(nix eval .#nixosConfigurations --apply builtins.attrNames --json | parse)
-          for h in "${hosts[@]}"; do
-            installables+=(".#nixosConfigurations.$h.config.system.build.toplevel")
-          done
-          mapfile -t homes < <(nix eval .#homeConfigurations --apply builtins.attrNames --json | parse)
-          for h in "${homes[@]}"; do
-            installables+=(".#homeConfigurations.\"$h\".activationPackage")
-          done
-          echo "==> Building ${#installables[@]} closure(s)"
-          : > "$RUNNER_TEMP/closure-outs.txt"
-          # Build one closure at a time, keeping a gc root on each out path:
-          # the combined closures push the runner's disk/RAM ceiling, and the
-          # single-invocation build keeps getting the runner torn down
-          # (exit 143) mid-copy since the last nixpkgs bump.
-          i=0
-          for installable in "${installables[@]}"; do
-            i=$((i + 1))
-            echo "==> [$i/${#installables[@]}] $installable"
-            nix build --no-link --print-out-paths -o "$RUNNER_TEMP/gcroot-$i" "$installable" | tee -a "$RUNNER_TEMP/closure-outs.txt"
-            df -h /
-          done
-
-      # Everything already served by a substituter is skipped; the rest
-      # would have to be rebuilt on every machine and lands in Cachix.
-      - name: Push closure paths missing from substituters
-        env:
-          NIXPKGS_ALLOW_UNFREE: "1"
-        run: |
-          set -euo pipefail
-          outs=$(cat "$RUNNER_TEMP/closure-outs.txt")
-          nix path-info -r $outs | sort -u > "$RUNNER_TEMP/closure.txt"
-          echo "==> Closure paths: $(wc -l < "$RUNNER_TEMP/closure.txt")"
-
-          substituters="https://cache.nixos.org https://niri.cachix.org https://nix-community.cachix.org https://catppuccin.cachix.org https://nixpkgs-python.cachix.org"
-          check() {
-            local p=$1
-            for s in $substituters; do
-              if nix path-info --store "$s" "$p" > /dev/null 2>&1; then
-                return 0
-              fi
-            done
-            return 1
-          }
-          export -f check
-          export substituters
-          xargs -P 16 -I{} bash -c 'check "$@"' _ < "$RUNNER_TEMP/closure.txt" > "$RUNNER_TEMP/missing.txt" || true
-          echo "==> Missing from every substituter: $(wc -l < "$RUNNER_TEMP/missing.txt")"
-          if [ -s "$RUNNER_TEMP/missing.txt" ]; then
-            cachix push w1ngd1nga5ter < "$RUNNER_TEMP/missing.txt"
-          fi
 
   cache:
     needs: checks

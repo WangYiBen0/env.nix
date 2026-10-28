@@ -1,0 +1,132 @@
+name: Closures
+
+# The expensive half of CI, deliberately kept off the merge path.
+#
+# `nix flake check` (the required `checks` job in ci.yml) only *evaluates* the
+# configurations, so a stale hash or a broken installPhase still passes it.
+# Building every system and home closure for real is what catches that, and it
+# takes 20-35 minutes. So it is not a required check:
+#
+#   * on main, where a broken closure must still be caught after the merge and
+#     the Cachix push keeps the cache warm;
+#   * on a pull request only when asked, by adding the `build-closures` label;
+#   * on demand from the Actions tab.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+
+concurrency:
+  group: closures-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  closures:
+    # `labeled` fires for any label, so only the one that asks for this build
+    # starts it. Push and dispatch have no label at all.
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.label.name == 'build-closures'
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v23
+        with:
+          # Determinate Nix tries to log in to FlakeHub when id-token: write is
+          # set; this repo publishes nowhere, so stay on vanilla Nix.
+          determinate: false
+          extra-conf: |
+            access-tokens = github.com=${{ github.token }}
+            experimental-features = nix-command flakes
+
+      - name: Set up Cachix
+        uses: cachix/cachix-action@v17
+        with:
+          name: w1ngd1nga5ter
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community,catppuccin,niri,nixpkgs-python
+
+      # The full host closures push ~25 GB into /nix/store, which alone is
+      # more than the runner's free disk; since the flake.lock nixpkgs bump
+      # the closure step has been dying mid-download with the runner being
+      # torn down (exit 143). Reclaim the preinstalled toolchains first.
+      - name: Free runner disk
+        run: |
+          set -euo pipefail
+          df -h /
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+            /usr/local/.ghcup /opt/hostedtoolcache/CodeQL \
+            /usr/local/share/boost /usr/share/swift
+          sudo docker image prune --force || true
+          df -h /
+
+      # `nix flake check` only evaluates the configurations — a build failure
+      # (stale hash, dead fetch) still passes. Build every system and home
+      # closure for real.
+      - name: Build system and home closures
+        env:
+          NIXPKGS_ALLOW_UNFREE: "1"
+        run: |
+          set -euo pipefail
+          parse() { sed -e 's/\[//' -e 's/\]//' -e 's/,/\n/g' -e 's/"//g' -e 's/ //g'; }
+          installables=()
+          mapfile -t hosts < <(nix eval .#nixosConfigurations --apply builtins.attrNames --json | parse)
+          for h in "${hosts[@]}"; do
+            installables+=(".#nixosConfigurations.$h.config.system.build.toplevel")
+          done
+          mapfile -t homes < <(nix eval .#homeConfigurations --apply builtins.attrNames --json | parse)
+          for h in "${homes[@]}"; do
+            installables+=(".#homeConfigurations.\"$h\".activationPackage")
+          done
+          echo "==> Building ${#installables[@]} closure(s)"
+          : > "$RUNNER_TEMP/closure-outs.txt"
+          # Build one closure at a time, keeping a gc root on each out path:
+          # the combined closures push the runner's disk/RAM ceiling, and the
+          # single-invocation build keeps getting the runner torn down
+          # (exit 143) mid-copy since the last nixpkgs bump.
+          i=0
+          for installable in "${installables[@]}"; do
+            i=$((i + 1))
+            echo "==> [$i/${#installables[@]}] $installable"
+            nix build --no-link --print-out-paths -o "$RUNNER_TEMP/gcroot-$i" "$installable" | tee -a "$RUNNER_TEMP/closure-outs.txt"
+            df -h /
+          done
+
+      # Everything already served by a substituter is skipped; the rest
+      # would have to be rebuilt on every machine and lands in Cachix.
+      - name: Push closure paths missing from substituters
+        env:
+          NIXPKGS_ALLOW_UNFREE: "1"
+        run: |
+          set -euo pipefail
+          outs=$(cat "$RUNNER_TEMP/closure-outs.txt")
+          nix path-info -r $outs | sort -u > "$RUNNER_TEMP/closure.txt"
+          echo "==> Closure paths: $(wc -l < "$RUNNER_TEMP/closure.txt")"
+
+          substituters="https://cache.nixos.org https://niri.cachix.org https://nix-community.cachix.org https://catppuccin.cachix.org https://nixpkgs-python.cachix.org"
+          check() {
+            local p=$1
+            for s in $substituters; do
+              if nix path-info --store "$s" "$p" > /dev/null 2>&1; then
+                return 0
+              fi
+            done
+            return 1
+          }
+          export -f check
+          export substituters
+          xargs -P 16 -I{} bash -c 'check "$@"' _ < "$RUNNER_TEMP/closure.txt" > "$RUNNER_TEMP/missing.txt" || true
+          echo "==> Missing from every substituter: $(wc -l < "$RUNNER_TEMP/missing.txt")"
+          if [ -s "$RUNNER_TEMP/missing.txt" ]; then
+            cachix push w1ngd1nga5ter < "$RUNNER_TEMP/missing.txt"
+          fi
