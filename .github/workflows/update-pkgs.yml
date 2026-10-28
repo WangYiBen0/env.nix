@@ -294,7 +294,7 @@ jobs:
           BASE_BRANCH: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          branch=bot/update-pkgs-${BASE_BRACNCH}
+          branch=bot/update-pkgs-${BASE_BRANCH}
 
           git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git checkout -B "$branch"
