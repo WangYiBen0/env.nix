@@ -23,6 +23,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
+          ref: ${{ github.ref_name }}
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v23
@@ -41,7 +42,7 @@ jobs:
 
       - name: Config git
         run: |
-          git checkout -B main
+          git checkout -B ${{ github.ref_name }}
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
@@ -290,9 +291,10 @@ jobs:
         if: steps.lock.outputs.updated == 'true' || steps.pkgs.outputs.updated != ''
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          BASE_BRANCH: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          branch=bot/update-pkgs
+          branch=bot/update-pkgs-${BASE_BRACNCH}
 
           git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git checkout -B "$branch"
@@ -306,8 +308,8 @@ jobs:
           CI is triggered by the push itself (the bot pushes with a GitHub App token),
           so no manual workflow dispatch is needed.
           EOF
-            gh pr create --base main --head "$branch" \
-              --title "chore(pkgs): automated package and flake.lock updates" \
+            gh pr create --base $BASE_BRANCH --head "$branch" \
+              --title "chore(${BASE_BRANCH}/pkgs): automated package and flake.lock updates" \
               --body-file "$RUNNER_TEMP/pr-body.md"
           else
             echo "updated the existing pull request for $branch"
