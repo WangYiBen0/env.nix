@@ -39,4 +39,24 @@
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+
+  networking = {
+    useDHCP = false;
+    interfaces = {
+      enp2s0 = {
+        useDHCP = false;
+        ip4 = [
+          {
+            address = "10.176.20.17";
+            prefixLength = 24;
+          }
+        ];
+      };
+    };
+    defaultGateway = "10.176.20.1";
+    nameservers = [
+      "8.8.8.8"
+      "114.114.115.115"
+    ];
+  };
 }
