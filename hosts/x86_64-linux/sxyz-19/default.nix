@@ -1,4 +1,4 @@
-_: {
+{ lib, ... }: {
   imports = [
     ./bootloader.nix
     ./disko.nix
@@ -7,7 +7,10 @@ _: {
     ./home.nix
   ];
 
-  machine.profiles.desktop = true;
+  machine = {
+    profiles.desktop = true;
+  };
+  systemd.services.honk-core.wantedBy = lib.mkForce [ ];
 
   networking.hostName = import ./hostname.nix;
   system.stateVersion = import ./state-version.nix;
