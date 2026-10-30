@@ -285,7 +285,7 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       # `main` is protected, so a push to it is rejected: the bot publishes its
-      # work as a pull request and a human merges it.
+      # work as a pull request and turns on auto-merge further down.
       - name: Open a pull request
         id: pr
         if: steps.lock.outputs.updated == 'true' || steps.pkgs.outputs.updated != ''
@@ -308,7 +308,7 @@ jobs:
           CI is triggered by the push itself (the bot pushes with a GitHub App token),
           so no manual workflow dispatch is needed.
           EOF
-            gh pr create --base $BASE_BRANCH --head "$branch" \
+            gh pr create --base "$BASE_BRANCH" --head "$branch" \
               --title "chore(${BASE_BRANCH}/pkgs): automated package and flake.lock updates" \
               --body-file "$RUNNER_TEMP/pr-body.md"
           else
@@ -316,6 +316,51 @@ jobs:
           fi
 
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
+
+      # Auto-merge is only worth what it gates on. `nix flake check` — the
+      # required check — only *evaluates*, so a package that builds into a
+      # broken installPhase passes it and would merge itself; doona
+      # 0.1.0-rc.2 did exactly that. Build what this run bumped first: a
+      # failure aborts the job here, so auto-merge is never enabled and the
+      # pull request is left sitting for a human.
+      - name: Build the updated packages
+        if: steps.pkgs.outputs.updated != ''
+        env:
+          NIXPKGS_ALLOW_UNFREE: "1"
+          UPDATED: ${{ steps.pkgs.outputs.updated }}
+        run: |
+          set -euo pipefail
+          failed=()
+          # The list is space-separated on purpose: split it into words.
+          # shellcheck disable=SC2086
+          for pkg in $UPDATED; do
+            echo "==> Building $pkg"
+            if ! nix build --no-link ".#packages.x86_64-linux.$pkg"; then
+              echo "::error title=package does not build::nix build failed for $pkg"
+              failed+=("$pkg")
+            fi
+          done
+          if [ ${#failed[@]} -gt 0 ]; then
+            echo "not enabling auto-merge: these packages do not build: ${failed[*]}"
+            exit 1
+          fi
+
+      # Auto-merge, scoped to this bot's own pull request: the call lives in
+      # this workflow, so no other pull request can reach it. The ruleset wants
+      # no approving review, so once the required `checks` run on the head
+      # commit passes, nothing is left waiting on a human.
+      - name: Enable auto-merge
+        if: steps.pr.outputs.branch != ''
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          BRANCH: ${{ steps.pr.outputs.branch }}
+        run: |
+          set -euo pipefail
+          if [ "$(gh pr view "$BRANCH" --json autoMergeRequest --jq '.autoMergeRequest != null')" = "true" ]; then
+            echo "auto-merge is already enabled for $BRANCH"
+            exit 0
+          fi
+          gh pr merge "$BRANCH" --auto --rebase
 
       - name: Fail on update errors
         if: steps.pkgs.outputs.failed != ''
