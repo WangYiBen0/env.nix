@@ -8,13 +8,13 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "loenn";
-  version = "1.0.10";
+  version = "1.0.12";
 
   src = fetchgit {
     url = "https://github.com/CelestialCartographers/Loenn.git";
     rev = "v${finalAttrs.version}";
     fetchSubmodules = true;
-    hash = "sha256-rc3yH5LNNSWIJceIZ95UUner9hqrlkGtdHScYu3ZUuU=";
+    hash = "sha256-/u6+dgiplkq8KZgdqzmD+1Rb0ZVTxlMEeHri0q27qA0=";
   };
 
   dontBuild = true;
