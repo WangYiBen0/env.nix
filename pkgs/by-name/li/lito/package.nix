@@ -17,7 +17,7 @@
 # offline with FETCHCONTENT_FULLY_DISCONNECTED. LLVM 22 is required: rstd uses
 # the `__builtin_ctzg` vector form that clang 21 rejects.
 let
-  version = "0.8.7";
+  version = "0.8.8";
 
   # Copy of lito's own deps.json (pinned by the upstream flake), inlined to
   # avoid importing a derivation's file during evaluation.
