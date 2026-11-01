@@ -291,11 +291,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793340996,
-        "narHash": "sha256-Vf+Ea6sgZ2fn+NU1m0wtIl6MJIOyXZ2BBlwd/HDYKio=",
+        "lastModified": 1793475822,
+        "narHash": "sha256-AtuZOzsb9p+TTzkgaPjvl+5YRsgKc+RlIQMyozOmY5A=",
         "owner": "niri-wm",
         "repo": "niri",
-        "rev": "b22eb842ca9506d4e2ff997b116031cdb3f650f8",
+        "rev": "a8562a1126922ed4c1c94d34c1dbb26633491d05",
         "type": "github"
       },
       "original": {
@@ -320,11 +320,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793250639,
-        "narHash": "sha256-5ZT7ZVSqM0OFq7D7LtETkrV3TNQ6NoFsptFOI0OFK+Q=",
+        "lastModified": 1793422527,
+        "narHash": "sha256-HdLDbipKYcWh4n8orz0LSgqIPIHoMbTRo659XwUmDMc=",
         "owner": "fufexan",
         "repo": "nix-gaming",
-        "rev": "46024210a12bf7203036f6e4d4d9318f96f488e7",
+        "rev": "09d13e94d65c23d321e0bc915262088510517cf8",
         "type": "github"
       },
       "original": {
