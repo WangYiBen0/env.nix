@@ -51,5 +51,11 @@ lib.mkIf config.machine.modules.nix.enable {
     };
   };
 
-  nixpkgs.config.allowUnfree = true;
+  nixpkgs.config = {
+    allowUnfree = true;
+    # `dingtalk` links against gtk2, which nixpkgs marks broken ahead of its
+    # removal in NixOS 27.05. Without this, evaluating the system closure is
+    # refused. Only that one problem is relaxed.
+    problems.handlers."gtk+".broken = "warn";
+  };
 }

@@ -90,69 +90,6 @@ jobs:
             echo "updated=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # A nixpkgs bump can change a fetcher's output (cargo vendor layout,
-      # pnpm store, ...) while upstream sources stay the same, which leaves
-      # the hashes pinned in pkgs/ stale; CI would then fail with a hash
-      # mismatch without any package actually changing. Rebuild every package
-      # local to this flake and patch fixed-output mismatches in place, so the
-      # CI triggered at the end of this workflow does not fail on them.
-      - name: Repair fetch hashes
-        if: steps.lock.outputs.updated == 'true'
-        env:
-          NIXPKGS_ALLOW_UNFREE: "1"
-        run: |
-          cat > "$RUNNER_TEMP/repair-hashes.sh" <<'EOF'
-          set -euo pipefail
-          packages=$(nix eval --raw --impure --expr "$(cat "$RUNNER_TEMP/update-expr.nix")")
-          mapfile -t packages <<<"$packages"
-          echo "Packages to check: ${packages[*]}"
-
-          changed=()
-          for entry in "${packages[@]}"; do
-            read -r pkg file <<<"$entry"
-            echo "==> Checking $pkg ($file)"
-            errf=$(mktemp)
-            # Fetches run before compilation, so a non-hash failure here means
-            # every fixed-output of this package already verified.
-            for _ in 1 2 3 4 5 6 7 8; do
-              if nix build --no-link ".#packages.x86_64-linux.$pkg" 2>"$errf"; then
-                break
-              fi
-              if ! grep -q "hash mismatch in fixed-output derivation" "$errf"; then
-                echo "::warning::nix build failed for $pkg without a hash mismatch; leaving it to CI"
-                cat "$errf"
-                break
-              fi
-              specified=$(awk '/^[[:space:]]*specified:/{print $2; exit}' "$errf")
-              got=$(awk '/^[[:space:]]*got:/{print $2; exit}' "$errf")
-              if [[ "$specified" != sha256-* || "$got" != sha256-* ]]; then
-                echo "::error::cannot parse the hash mismatch for $pkg; failing so it is not silently skipped"
-                cat "$errf"
-                rm -f "$errf"
-                exit 1
-              fi
-              if ! grep -qF -- "$specified" "$file"; then
-                echo "::error::$specified is not pinned in $file; cannot repair $pkg"
-                rm -f "$errf"
-                exit 1
-              fi
-              echo "    $specified -> $got"
-              sed -i "s|$specified|$got|" "$file"
-            done
-            rm -f "$errf"
-            if ! git diff --quiet -- "$file"; then
-              changed+=("$pkg")
-            fi
-          done
-
-          if [ ${#changed[@]} -gt 0 ]; then
-            git add --all
-            git commit --message "fix(pkgs): refresh fetch hashes for the new flake.lock (${changed[*]})"
-          fi
-          EOF
-
-          nix develop --command bash "$RUNNER_TEMP/repair-hashes.sh"
-
       - name: Update pkgs
         id: pkgs
         env:
@@ -221,7 +158,6 @@ jobs:
             echo "Packages to update: ${packages[*]}"
 
             changed=()
-            failed=()
             for entry in "${packages[@]}"; do
               read -r pkg file <<<"$entry"
               echo "==> Updating $pkg ($file)"
@@ -245,14 +181,15 @@ jobs:
                 fi
               done
               if [ "$success" != 1 ]; then
-                # One broken package must not block the others or strand the
-                # updates that did succeed: undo any partial rewrite, warn,
-                # and keep going. The job is failed at the very end, after
-                # the Push step has run.
+                # Fail at the package that broke, not at the end. Continuing
+                # would hide which package is actually broken behind a summary
+                # line, and every later step (the hash repair, the PR, the
+                # auto-merge) would run on a tree that is already known bad.
                 echo "::error title=nix-update failed::nix-update failed for $pkg"
                 git checkout -- "$file" 2>/dev/null || true
-                failed+=("$pkg")
-              elif ! git diff --quiet; then
+                exit 1
+              fi
+              if ! git diff --quiet; then
                 changed+=("$pkg")
                 git add --all
               fi
@@ -265,21 +202,91 @@ jobs:
               echo "### Update pkgs"
               if [ ${#changed[@]} -gt 0 ]; then
                 echo "- updated: ${changed[*]}"
-              fi
-              if [ ${#failed[@]} -gt 0 ]; then
-                echo "- failed: ${failed[*]}"
-              fi
-              if [ ${#changed[@]} -eq 0 ] && [ ${#failed[@]} -eq 0 ]; then
+              else
                 echo "- nothing to update"
               fi
             } >> "$GITHUB_STEP_SUMMARY"
-            printf "updated=%s\nfailed=%s\n" "${changed[*]:-}" "${failed[*]:-}" >> "$GITHUB_OUTPUT"
+            printf "updated=%s\n" "${changed[*]:-}" >> "$GITHUB_OUTPUT"
           '
+
+      # Deliberately *after* the update: `nix-update` already rewrites the
+      # hashes of every package it bumps, so repairing those first threw that
+      # work away. What is left is the packages this run did not touch — a
+      # nixpkgs bump can change a fetcher's output (cargo vendor layout, pnpm
+      # store, ...) while their upstream source stays the same, which leaves
+      # the pinned hashes stale and would fail the pull request's CI with a
+      # hash mismatch that no package change caused. Those are rebuilt here and
+      # the mismatches patched in place.
+      - name: Repair fetch hashes
+        if: steps.lock.outputs.updated == 'true'
+        env:
+          NIXPKGS_ALLOW_UNFREE: "1"
+        run: |
+          cat > "$RUNNER_TEMP/repair-hashes.sh" <<'EOF'
+          set -euo pipefail
+          packages=$(nix eval --raw --impure --expr "$(cat "$RUNNER_TEMP/update-expr.nix")")
+          mapfile -t packages <<<"$packages"
+          # $1 is the space-separated list of packages "Update pkgs" already
+          # bumped; nix-update refreshed their hashes itself.
+          updated=" ${1:-} "
+          echo "Packages nix-update already handled:${updated% }"
+
+          changed=()
+          for entry in "${packages[@]}"; do
+            read -r pkg file <<<"$entry"
+            case "$updated" in
+              *" $pkg "*)
+                echo "==> Skipping $pkg ($file): already updated"
+                continue
+                ;;
+            esac
+            echo "==> Checking $pkg ($file)"
+            errf=$(mktemp)
+            # Fetches run before compilation, so a non-hash failure here means
+            # every fixed-output of this package already verified.
+            for _ in 1 2 3 4 5 6 7 8; do
+              if nix build --no-link ".#packages.x86_64-linux.$pkg" 2>"$errf"; then
+                break
+              fi
+              if ! grep -q "hash mismatch in fixed-output derivation" "$errf"; then
+                echo "::warning::nix build failed for $pkg without a hash mismatch; leaving it to CI"
+                cat "$errf"
+                break
+              fi
+              specified=$(awk '/^[[:space:]]*specified:/{print $2; exit}' "$errf")
+              got=$(awk '/^[[:space:]]*got:/{print $2; exit}' "$errf")
+              if [[ "$specified" != sha256-* || "$got" != sha256-* ]]; then
+                echo "::error::cannot parse the hash mismatch for $pkg; failing so it is not silently skipped"
+                cat "$errf"
+                rm -f "$errf"
+                exit 1
+              fi
+              if ! grep -qF -- "$specified" "$file"; then
+                echo "::error::$specified is not pinned in $file; cannot repair $pkg"
+                rm -f "$errf"
+                exit 1
+              fi
+              echo "    $specified -> $got"
+              sed -i "s|$specified|$got|" "$file"
+            done
+            rm -f "$errf"
+            if ! git diff --quiet -- "$file"; then
+              changed+=("$pkg")
+            fi
+          done
+
+          if [ ${#changed[@]} -gt 0 ]; then
+            git add --all
+            git commit --message "fix(pkgs): refresh fetch hashes for the new flake.lock (${changed[*]})"
+          fi
+          EOF
+
+          nix develop --command bash "$RUNNER_TEMP/repair-hashes.sh" "${{ steps.pkgs.outputs.updated }}"
 
       - name: Generate GitHub App Token
         id: app-token
         if: steps.lock.outputs.updated == 'true' || steps.pkgs.outputs.updated != ''
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
@@ -304,12 +311,15 @@ jobs:
             cat > "$RUNNER_TEMP/pr-body.md" <<'EOF'
           Automated `flake.lock` and package updates from the `Update pkgs` workflow.
 
-          Opened as a pull request because `main` no longer accepts direct pushes.
-          CI is triggered by the push itself (the bot pushes with a GitHub App token),
-          so no manual workflow dispatch is needed.
+          Opened as a pull request because the default branch does not accept
+          direct pushes. CI is triggered by the push itself (the bot pushes with
+          a GitHub App token), so no manual workflow dispatch is needed.
           EOF
+            if [ "$BASE_BRANCH" != "main" ]; then
+              printf '\nTargeting `%s`, not `main`.\n' "$BASE_BRANCH" >> "$RUNNER_TEMP/pr-body.md"
+            fi
             gh pr create --base "$BASE_BRANCH" --head "$branch" \
-              --title "chore(${BASE_BRANCH}/pkgs): automated package and flake.lock updates" \
+              --title "chore(pkgs): automated package and flake.lock updates" \
               --body-file "$RUNNER_TEMP/pr-body.md"
           else
             echo "updated the existing pull request for $branch"
@@ -330,20 +340,18 @@ jobs:
           UPDATED: ${{ steps.pkgs.outputs.updated }}
         run: |
           set -euo pipefail
-          failed=()
           # The list is space-separated on purpose: split it into words.
           # shellcheck disable=SC2086
           for pkg in $UPDATED; do
             echo "==> Building $pkg"
             if ! nix build --no-link ".#packages.x86_64-linux.$pkg"; then
+              # Stop here: auto-merge is never reached, so the pull request is
+              # left open for a human instead of merging a package that does
+              # not build.
               echo "::error title=package does not build::nix build failed for $pkg"
-              failed+=("$pkg")
+              exit 1
             fi
           done
-          if [ ${#failed[@]} -gt 0 ]; then
-            echo "not enabling auto-merge: these packages do not build: ${failed[*]}"
-            exit 1
-          fi
 
       # Auto-merge, scoped to this bot's own pull request: the call lives in
       # this workflow, so no other pull request can reach it. The ruleset wants
@@ -361,9 +369,3 @@ jobs:
             exit 0
           fi
           gh pr merge "$BRANCH" --auto --rebase
-
-      - name: Fail on update errors
-        if: steps.pkgs.outputs.failed != ''
-        run: |
-          echo "nix-update failed for: ${{ steps.pkgs.outputs.failed }}"
-          exit 1
