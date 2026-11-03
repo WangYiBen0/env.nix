@@ -15,7 +15,16 @@ let
     system:
     import nixpkgs {
       inherit system;
-      config.allowUnfree = true;
+      config = {
+        allowUnfree = true;
+        # `gtk+` (gtk2) is marked broken upstream — its last release was
+        # December 2020 and NixOS 27.05 drops it — and `dingtalk` still links
+        # against it. At the default setting, evaluating that package is
+        # refused outright, which kills both the flake outputs and the update
+        # bot. Downgrade that one problem to a warning; every other broken
+        # package still fails loudly.
+        problems.handlers."gtk+".broken = "warn";
+      };
       overlays = [ (import ../overlays inputs) ];
     };
 
