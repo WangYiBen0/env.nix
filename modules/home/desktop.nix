@@ -11,9 +11,6 @@ lib.mkIf config.machine.modules.desktop.enable {
     ironbar
     libreoffice-qt
     miyu
-    # deepseek-harness comes in through programs.dsh.package
-    # (modules/home/deepseek-harness/); listing it here too would put two
-    # versions in home-manager-path and buildEnv refuses conflicting bin/dsh.
     dsh-tui
     nemo-with-extensions
     osu-lazer-bin
@@ -23,6 +20,7 @@ lib.mkIf config.machine.modules.desktop.enable {
   ];
 
   programs = {
+    bun.enable = true;
     zen-browser = {
       enable = true;
       setAsDefaultBrowser = true;
