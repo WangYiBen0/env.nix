@@ -136,7 +136,7 @@ let
     };
   });
 
-  version = "9.0.0.261030001";
+  version = "8.3.1.261008001";
   arch = if stdenv.hostPlatform.isAarch64 then "arm64" else "amd64";
   url = "https://dtapp-pub.dingtalk.com/dingtalk-desktop/xc_dingtalk_update/linux_deb/Release/com.alibabainc.dingtalk_${version}_${arch}.deb";
   # 9.0 has no redirect entry on dingtalk.com's update feed yet (it still hands
@@ -144,9 +144,9 @@ let
   # release URLs the user pointed at.
   hash =
     if stdenv.hostPlatform.isAarch64 then
-      "sha256-UBLTApjSR20sIFXifdx3sdyeUCsEGPqYjpkMNDb94Io="
+      "sha256-GcMePt3sN8W1yK3FsSp9uyC5zQQWuXhyR3pvhlrPhgM="
     else
-      "sha256-kaBDBzrxGg8GPTvixL2m37Y8Mkfv1mypBjCv3h8RLY8=";
+      "sha256-NatoDe0QSrzcU6Z/z8/ytWR5mX8W6Kv+EcQfv1j1gl4=";
 
   src = fetchurl {
     inherit url hash;
