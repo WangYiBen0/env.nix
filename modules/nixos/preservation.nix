@@ -1,7 +1,6 @@
 {
   config,
   lib,
-  inputs,
   ...
 }:
 let
@@ -43,10 +42,6 @@ let
   ];
 in
 {
-  imports = [ inputs.preservation.nixosModules.preservation ];
-  # ^ keep imports outside mkIf: module imports are unconditional, the config
-  # below is not.
-
   config = lib.mkIf cfg.enable {
     # The /persist mount itself comes from disko (`nixos/@persist` in the
     # host's disko.nix), which is also what creates the subvolume on install.
