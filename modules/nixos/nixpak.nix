@@ -2,7 +2,6 @@
   config,
   lib,
   pkgs,
-  inputs,
   ...
 }:
 let
@@ -61,24 +60,12 @@ let
   ];
 in
 {
-  # Upstream ships a NixOS module: `security.nixpak.apps.<name>.configuration`
-  # takes a nixpak config module, and its `config.env` output (the original
-  # package with the main binary replaced by the bubblewrap wrapper) is added
-  # to environment.systemPackages.
-  imports = [ inputs.nixpak.nixosModules.default ];
-
   config = lib.mkIf cfg.enable {
     security.nixpak = {
       enable = true;
       defaults = desktopSandbox;
 
       apps = {
-        # QQ is deliberately absent: pkgs.linuxqq is Tencent's own
-        # Wayland-optimised build that already talks to the compositor, the
-        # IME and the portal correctly. Wrapping it would only interpose
-        # bubblewrap between it and plumbing that works today, buying no
-        # isolation the user asked for. qq therefore stays a plain
-        # systemPackage in modules/nixos/desktop.nix.
         dingtalk.configuration =
           { sloth, ... }:
           {

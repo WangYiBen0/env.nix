@@ -284,6 +284,26 @@
         "type": "github"
       }
     },
+    "linuxqq-wayland-fix": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793603338,
+        "narHash": "sha256-J9tGGmDBIF8IVtKHCmN/FS7rfgzJxJKHryRk65fXgbs=",
+        "owner": "SHORiN-KiWATA",
+        "repo": "linuxqq-wayland-fix",
+        "rev": "e45408c477d2307461ff8e900cf78084590fd83d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "SHORiN-KiWATA",
+        "repo": "linuxqq-wayland-fix",
+        "type": "github"
+      }
+    },
     "niri": {
       "inputs": {
         "nixpkgs": [
@@ -500,6 +520,7 @@
         "git-hooks": "git-hooks",
         "haumea": "haumea",
         "home-manager": "home-manager",
+        "linuxqq-wayland-fix": "linuxqq-wayland-fix",
         "niri": "niri",
         "nix-gaming": "nix-gaming",
         "nix-index-database": "nix-index-database",

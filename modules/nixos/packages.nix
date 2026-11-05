@@ -212,5 +212,7 @@ lib.mkIf config.machine.modules.packages.enable {
       viAlias = true;
       vimAlias = true;
     };
+
+    linuxqq-wayland-fix.enable = true;
   };
 }
