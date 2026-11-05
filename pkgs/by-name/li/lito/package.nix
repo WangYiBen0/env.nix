@@ -123,6 +123,8 @@ llvmPackages_22.libcxxStdenv.mkDerivation {
       asl20
     ];
     mainProgram = "lito";
-    platforms = lib.platforms.unix;
+    # `unix` advertised Darwin, but the build hardcodes ${glibc.dev}/include
+    # and libcxx from the Linux LLVM; only Linux can be built.
+    platforms = lib.platforms.linux;
   };
 }
