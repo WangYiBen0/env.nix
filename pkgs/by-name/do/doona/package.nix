@@ -14,7 +14,7 @@
 }:
 
 let
-  version = "0.1.0-rc.5";
+  version = "0.1.0-rc.6";
 
   # pnpm-workspace.yaml carries `allowBuilds`, so only esbuild's postinstall
   # is permitted; playwright's browser download never runs. Upstream pins
@@ -29,7 +29,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     owner = "Zakkaus";
     repo = "doona";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-cQzGWwoVj0rVUZx7XeqP4wdKsP18hKj8QnVhH6sZsyM=";
+    hash = "sha256-5NRzRlVBbR9gFSZ0leNgnXdtPur0VMId36gKbXbWtQ0=";
   };
 
   pnpmDeps = fetchPnpmDeps {
