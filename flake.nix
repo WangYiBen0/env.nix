@@ -21,6 +21,8 @@
     };
 
     # United Definitions, to prevent dulplicated instances, but actually not in use? idk
+    crane.url = "github:ipetkov/crane";
+
     flake-compat = {
       url = "github:NixOS/flake-compat";
       flake = false;
@@ -50,6 +52,15 @@
     haumea = {
       url = "github:nix-community/haumea/v0.2.2";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    ironbar = {
+      url = "github:JakeStanger/ironbar";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-compat.follows = "flake-compat";
+        crane.follows = "crane";
+      };
     };
 
     linuxqq-wayland-fix = {
