@@ -97,6 +97,21 @@
         "type": "github"
       }
     },
+    "crane": {
+      "locked": {
+        "lastModified": 1793836618,
+        "narHash": "sha256-TREenflwEjxOSq292FYwbc3kEm7TDRtXCZRNWEdjBmg=",
+        "owner": "ipetkov",
+        "repo": "crane",
+        "rev": "79fd63528501446749c09f08cad486a58c7d173e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ipetkov",
+        "repo": "crane",
+        "type": "github"
+      }
+    },
     "deepseek-harnix": {
       "inputs": {
         "flake-parts": [
@@ -284,6 +299,32 @@
         "type": "github"
       }
     },
+    "ironbar": {
+      "inputs": {
+        "crane": [
+          "crane"
+        ],
+        "flake-compat": [
+          "flake-compat"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1794237289,
+        "narHash": "sha256-7aohS224X77gP6f8cCI7okEt+vqxogh/PX7oPNxpqtU=",
+        "owner": "JakeStanger",
+        "repo": "ironbar",
+        "rev": "12711a595a95414dbac08c3970ec91a3765a142b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "JakeStanger",
+        "repo": "ironbar",
+        "type": "github"
+      }
+    },
     "linuxqq-wayland-fix": {
       "inputs": {
         "nixpkgs": [
@@ -311,11 +352,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794203352,
-        "narHash": "sha256-Olv3oXpH+E2AicKSb0Ggem1AW5hDEJEt7J/HDu1IGgk=",
+        "lastModified": 1794297782,
+        "narHash": "sha256-mv7j+r7l7w9Ysek1xQBErjDGo0StteVCjK7MuYr5pJg=",
         "owner": "niri-wm",
         "repo": "niri",
-        "rev": "5935130029941411d9c00784a974a77f244ea3b5",
+        "rev": "7f81a7f77b0e93464645232bd15ba2dc43ca3782",
         "type": "github"
       },
       "original": {
@@ -340,11 +381,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794224602,
-        "narHash": "sha256-rcjqitVbDxtmNWDv35gPmTexDeQFsV9BF4GD3NmQgtA=",
+        "lastModified": 1794293202,
+        "narHash": "sha256-sMffGA16WJBVMDoWUPLH6PXy5V5W3IeaTOxgA9cYw8A=",
         "owner": "fufexan",
         "repo": "nix-gaming",
-        "rev": "917f7eeedd72527e044c4ef2c18df58f0e7d1244",
+        "rev": "01772509e6c8d07deaa5f5c1d5fd494c3460a026",
         "type": "github"
       },
       "original": {
@@ -513,6 +554,7 @@
       "inputs": {
         "apple-fonts": "apple-fonts",
         "catppuccin": "catppuccin",
+        "crane": "crane",
         "deepseek-harnix": "deepseek-harnix",
         "disko": "disko",
         "flake-compat": "flake-compat",
@@ -520,6 +562,7 @@
         "git-hooks": "git-hooks",
         "haumea": "haumea",
         "home-manager": "home-manager",
+        "ironbar": "ironbar",
         "linuxqq-wayland-fix": "linuxqq-wayland-fix",
         "niri": "niri",
         "nix-gaming": "nix-gaming",

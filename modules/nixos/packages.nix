@@ -78,6 +78,7 @@ lib.mkIf config.machine.modules.packages.enable {
     meson
     ninja
     ccache
+    pkg-config
 
     # ── Version control ────────────────────────────────────────────────
     git
@@ -182,6 +183,9 @@ lib.mkIf config.machine.modules.packages.enable {
 
     # ── Sandboxing ─────────────────────────────────────────────────────
     bubblewrap
+
+    # ── Wrapper ────────────────────────────────────────────────────────
+    # pipewire.jack
   ];
 
   environment.variables = {
