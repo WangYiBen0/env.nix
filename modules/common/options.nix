@@ -9,6 +9,7 @@
     modules = {
       desktop.enable = lib.mkEnableOption "desktop environment bundle (plasma, niri session, desktop apps)";
       niri.enable = lib.mkEnableOption "niri window manager";
+      ironbar.enable = lib.mkEnableOption "ironbar status bar for the niri session";
       kitty.enable = lib.mkEnableOption "kitty terminal";
       font.enable = lib.mkEnableOption "font configuration";
       ime.enable = lib.mkEnableOption "input method (fcitx5)";

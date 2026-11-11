@@ -2,30 +2,20 @@
   lib,
   config,
   pkgs,
-  inputs,
   ...
 }:
 
 lib.mkIf config.machine.modules.desktop.enable {
-  home.packages =
-    (with pkgs; [
-      bluetui
-      libreoffice-qt
-      miyu
-      dsh-tui
-      nemo-with-extensions
-      osu-lazer-bin
-      spotify-spotx
-      cele-mod
-    ])
-    ++ [
-      # nixpkgs' ironbar (0.19.1) does not build: its cargo build sets
-      # LIBGIT2_NO_VENDOR but the derivation has no libgit2 in its buildInputs,
-      # so libgit2-sys aborts with "no compatible system libgit2 could be
-      # found". Upstream's own flake builds fine, so take the package from
-      # there instead of waiting for the nixpkgs fix.
-      inputs.ironbar.packages.${pkgs.stdenv.hostPlatform.system}.default
-    ];
+  home.packages = with pkgs; [
+    bluetui
+    libreoffice-qt
+    miyu
+    dsh-tui
+    nemo-with-extensions
+    osu-lazer-bin
+    spotify-spotx
+    cele-mod
+  ];
 
   programs = {
     bun.enable = true;
