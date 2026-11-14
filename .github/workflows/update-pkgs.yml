@@ -102,23 +102,19 @@ jobs:
           # nix-update exits non-zero via an uncaught VersionError when the
           # newest release is unstable but --version=unstable is not requested;
           # treat that like "no update" instead of failing the run.
-          # nix-update resolves the flake source through `nix flake metadata
-          # --json`, whose reported store path is only materialized lazily by
-          # the fetcher. On the installed upstream Nix nothing forces that
-          # copy, so every eval nix-update runs AFTER the update script has
-          # modified the tree dies with `opening file ...-source: No such file
-          # or directory`. Drop the store-path indirection: eval.nix then
-          # falls back to `builtins.getFlake <working tree>`, which fetches on
-          # demand on every Nix (the update-expr.nix above already relies on
-          # exactly that). All three call sites in nix-update handle `None`.
+          #
+          # Everything else that used to live here — the
+          # get_flake_import_path monkeypatch and the `nix flake archive`
+          # calls inside the loop — worked around nix-update evaluating a
+          # flake source store path that Nix >= 2.35 never materialises
+          # (see overlays/nix-update.nix). The overlay patches that at the
+          # source, and `.#nix-update` below is the patched build, so the
+          # loop runs a plain nix-update.
           cat > "$RUNNER_TEMP/nix-update-wrapper.py" <<'EOF'
           import sys
 
           from nix_update import main
           from nix_update.errors import VersionError
-          from nix_update.options import Options
-
-          Options.get_flake_import_path = lambda self: None
 
           try:
               main(sys.argv[1:])
@@ -127,12 +123,7 @@ jobs:
               sys.exit(0)
           EOF
 
-          # Materialize the flake source in the store: for a clean git tree
-          # `nix flake metadata` reports a store path that is only materialized
-          # lazily, and nix-update's eval dies with "opening file ...-source:
-          # No such file or directory" when nothing forced the copy beforehand
-          # (the dev shell used to do it as a side effect). Archiving also
-          # warms every flake input for the per-package evals.
+          # Warm every flake input once: the per-package evals reuse them.
           for attempt in 1 2 3; do
             nix flake archive && break
             echo "nix flake archive attempt $attempt failed"
@@ -144,9 +135,12 @@ jobs:
           # Resolve nix-update straight from the store and run the loop in a
           # plain bash: running it inside `nix develop` (dev shell + the
           # nested mkShell develops of every updateScript) made the flake
-          # source store path vanish mid-run on runners — "opening file
-          # ...-source: No such file or directory".
-          nupath=$(nix build --no-link --print-out-paths nixpkgs#nix-update)
+          # source store path vanish mid-run on runners.
+          #
+          # `.#nix-update`, not `nixpkgs#nix-update`: the flake's overlay
+          # carries the lazy-source patch, and the packages' own
+          # `nix-update-script` passthru resolves to the same patched build.
+          nupath=$(nix build --no-link --print-out-paths .#nix-update)
           nu_py=$(head -n1 "$nupath/bin/.nix-update-wrapped" | sed "s/^#!//")
           export nupath nu_py
           export PYTHONPATH="$(echo "$nupath"/lib/python*/site-packages)${PYTHONPATH:+:$PYTHONPATH}"
@@ -161,10 +155,6 @@ jobs:
             for entry in "${packages[@]}"; do
               read -r pkg file <<<"$entry"
               echo "==> Updating $pkg ($file)"
-              # The git operations of this loop (add/checkout) re-key the
-              # flake source store path; re-materialize it before every
-              # package so the eval flakeImportPath always exists.
-              nix flake archive --no-write-lock-file > /dev/null 2>&1 || true
               # Transient flake-input fetch failures (tarball resets, timeouts)
               # surface here as eval errors; retry a few times before giving
               # up on a package, undoing any partial rewrite between attempts.

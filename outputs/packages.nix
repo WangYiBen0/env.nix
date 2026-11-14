@@ -45,6 +45,7 @@ forAllSystems (
 
     fromNixpkgs = lib.filterAttrs (_: p: lib.meta.availableOn pkgs.stdenv.hostPlatform p) {
       inherit (pkgs)
+        nix-update
         niri
         xwayland-satellite
         zen-browser

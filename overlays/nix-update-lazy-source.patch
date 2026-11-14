@@ -1,0 +1,31 @@
+Fix nix-update evaluating a flake source that Nix never materialised.
+
+`nix flake metadata --json` reports the content-addressed store path a local
+flake source would get, and up to Nix 2.34 that path was written to the store
+as a side effect of the call. Nix 2.35 dropped the copy (NixOS/nix#15711), so
+the path is reported but nothing exists there and evaluating
+`builtins.getFlake <store path>` dies with
+
+    error: opening file "/nix/store/...-source": No such file or directory
+
+Report "no store path" when the path is missing; the callers (eval.nix and the
+prefetchers) already treat None as "evaluate the local directory".
+
+diff --git a/nix_update/options.py b/nix_update/options.py
+--- a/nix_update/options.py
++++ b/nix_update/options.py
+@@ -122,9 +122,13 @@
+ 
+         flake_dir = _metadata_flake_dir(metadata)
+         if flake_dir:
+-            return str(Path(path) / flake_dir)
++            path = str(Path(path) / flake_dir)
+     except (subprocess.CalledProcessError, json.JSONDecodeError):
+         return None
++    # Nix >= 2.35 copies flake sources lazily, so the reported path may never
++    # have been written. Callers treat None as "evaluate the directory".
++    if not Path(path).exists():
++        return None
+     return path
+ 
+ 
