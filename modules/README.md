@@ -189,10 +189,47 @@ The live CD below boots into a system with the tools for exactly this job.
 | font             | `machine.modules.font.enable`             | User fonts + fontconfig                              |
 | ime              | `machine.modules.ime.enable`              | Fcitx5 + RIME + rime-ice                             |
 | launcher         | `machine.modules.launcher.enable`         | Fuzzel launcher                                      |
-| theme            | `machine.modules.theme.enable`            | Cursor, GTK, Qt, Catppuccin                          |
+| theme            | `machine.modules.theme.enable`            | Cursor, GTK, Qt, libadwaita, Catppuccin              |
 | directory        | `machine.modules.directory.enable`        | XDG user directories                                 |
 | variable         | `machine.modules.variable.enable`         | Desktop session variables                            |
 | deepseek-harness | `machine.modules.deepseek-harness.enable` | dsh web UI user service                              |
+
+#### theme
+
+`machine.modules.theme.enable` sets the WhiteSur desktop theme for GTK,
+libadwaita, Qt/Kvantum and Catppuccin. Two pieces are worth knowing about.
+
+**libadwaita.** GNOME's libadwaita ignores `gtk-theme-name` and only reads
+`$XDG_CONFIG_HOME/gtk-4.0/gtk.css`, which is why a GTK theme normally shows up
+in GTK 3 and native GTK 4 apps but not in libadwaita apps. `pkgs.whitesur-libadwaita`
+extracts the compiled stylesheets out of the theme's `gtk.gresource` and writes
+a `gtk.css` that imports the light or the dark sheet depending on
+`@media (prefers-color-scheme: …)`; the module pulls that in with
+`gtk.gtk4.extraCss`. GTK re-parses user CSS whenever the colour scheme changes,
+so nothing has to be rewritten at runtime. The imports are absolute `file://`
+URLs on purpose: GTK resolves relative ones against the directory of the
+symlink it loaded, which is `~/.config/gtk-4.0`, not the store.
+
+**Light/dark switching.** `lightDark.enable` runs
+[darkman](https://gitlab.com/WhyNotHugo/darkman) as a user service. It computes
+sunrise and sunset from `latitude`/`longitude` and calls a script on every
+transition, which writes `color-scheme`, `gtk-theme` and `icon-theme` to dconf.
+That single write covers GTK 4 (portal-backed `org.freedesktop.appearance`),
+libadwaita (same setting, media queries above) and GTK 3
+(`org.gnome.desktop.interface` read directly by the Wayland backend). Kitty
+needs no script at all — it watches the OS colour scheme itself through
+`autoThemeFiles`. Qt only re-reads `Kvantum/kvantum.kvconfig` at start-up, so
+already-running Qt apps keep their style until restarted.
+
+| Option      | Default | Description                                   |
+| ----------- | ------- | --------------------------------------------- |
+| `enable`    | unset   | Both coordinates are required once this is on |
+| `latitude`  | —       | Latitude for the sunrise/sunset calculation   |
+| `longitude` | —       | Longitude for the sunrise/sunset calculation  |
+
+Geoclue is deliberately not used: it needs its own service plus a permission
+prompt before the first transition, and a fixed pair of coordinates is exact
+enough for a sunrise calculation.
 
 ### Always-Loaded Modules
 
@@ -238,7 +275,7 @@ modules/
 │   ├── nix-index.nix         # nix-index + comma
 │   ├── niri.nix              # Niri config (gated: machine.modules.niri.enable)
 │   ├── kitty.nix             # Kitty terminal (gated: machine.modules.kitty.enable)
-│   ├── theme.nix             # GTK/Qt theme (gated: machine.modules.theme.enable)
+│   ├── theme.nix             # GTK/Qt/libadwaita theme + darkman (gated: machine.modules.theme.enable)
 │   ├── ime.nix               # Fcitx5 (gated: machine.modules.ime.enable)
 │   ├── font.nix              # User fonts (gated: machine.modules.font.enable)
 │   ├── launcher.nix          # Fuzzel (gated: machine.modules.launcher.enable)

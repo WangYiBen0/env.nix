@@ -13,7 +13,20 @@
       font.enable = lib.mkEnableOption "font configuration";
       ime.enable = lib.mkEnableOption "input method (fcitx5)";
       launcher.enable = lib.mkEnableOption "application launcher (fuzzel)";
-      theme.enable = lib.mkEnableOption "desktop theme (GTK/Qt/catppuccin)";
+      theme = {
+        enable = lib.mkEnableOption "desktop theme (GTK/Qt/catppuccin)";
+        lightDark = {
+          enable = lib.mkEnableOption "automatic light/dark switch at sunrise and sunset (darkman)";
+          latitude = lib.mkOption {
+            type = lib.types.float;
+            description = "Latitude used to compute sunrise and sunset; read only when lightDark.enable is set.";
+          };
+          longitude = lib.mkOption {
+            type = lib.types.float;
+            description = "Longitude used to compute sunrise and sunset; read only when lightDark.enable is set.";
+          };
+        };
+      };
       wallpaper = {
         enable = lib.mkEnableOption "static wallpaper for the niri session";
         backend = lib.mkOption {
