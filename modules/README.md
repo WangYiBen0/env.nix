@@ -42,6 +42,7 @@ Directories are imported by `lib.scanNixFiles`, which loads every `.nix` file th
 | font         | `machine.modules.font.enable`         | System fonts (Noto, Maple Mono, JetBrains Mono, …)                |
 | compat       | `machine.modules.compat.enable`       | nix-ld, flatpak, podman, Wine                                     |
 | honk         | `machine.modules.honk.enable`         | honk transparent proxy + doona web UI                             |
+| accesser     | `machine.modules.accesser.enable`     | Accesser SNI-RST HTTPS proxy (local PAC server)                   |
 | system       | `machine.modules.system.enable`       | Base system: kernel, timezone, locale, boot                       |
 | services     | `machine.modules.services.enable`     | Base services: PipeWire, SSH, bluetooth, printing                 |
 | packages     | `machine.modules.packages.enable`     | System packages (shared with the HM side)                         |
@@ -73,6 +74,43 @@ subscription in the UI, saving) fail with 422 "Configuration validation failed".
 
 honk needs Linux 6.12+, a bpffs mount at `/sys/fs/bpf`, and runs as root.
 Reach the UI from another machine by setting `api.listen` to a LAN address.
+
+#### accesser
+
+`machine.modules.accesser.enable` runs [Accesser](https://github.com/URenko/Accesser)
+as a systemd unit: a local HTTPS proxy that fixes SNI-RST blocking by
+rewriting the Client Hello for the domains its rule file lists. It is a
+plain userspace process — no kernel modules, no root-only facilities — and
+listens on `127.0.0.1:7654` by default. Clients point at it either as an
+explicit HTTPS proxy or through the PAC file it serves at `/pac/`.
+
+| Option          | Default     | Description                                                          |
+| --------------- | ----------- | -------------------------------------------------------------------- |
+| `port`          | `7654`      | Proxy/PAC/certificate port                                           |
+| `address`       | `127.0.0.1` | Bind address; a LAN address or `0.0.0.0` exposes it to other devices |
+| `pacHost`       | `address`   | Host written into the PAC file                                       |
+| `checkHostname` | `true`      | `true` loose, `"strict"` RFC 2818, `false` no verification           |
+| `ipv6`          | `false`     | Prefer AAAA records when resolving upstream hosts                    |
+| `loglevel`      | `INFO`      | Log level (journal)                                                  |
+| `extraConfig`   | `""`        | Verbatim `config.toml` additions, each under a table header          |
+| `extraRules`    | `""`        | Extra rules installed to `/var/lib/accesser/rules/nixos.toml`        |
+| `openFirewall`  | LAN address | Open `port` when the bind address is not loopback                    |
+
+Accesser reads `config.toml`, `rules.toml` and `rules/*.toml` from its working
+directory, so the unit runs in `/var/lib/accesser`. `config.toml` is Nix-owned
+and reinstalled on every start, while `rules.toml` is upstream's and is
+seeded/refreshed by Accesser itself; user rules in `rules/` outrank it but
+lose to `config.toml`. That is why per-domain overrides (`[DNS]`, `[hosts]`,
+`[alter_hostname]`, `[cert_verify]`, …) belong in `extraConfig`, and only
+routing-style additions belong in `extraRules`.
+
+The root CA is generated on first start in `/var/lib/accesser/CERT` and is
+never imported into the system trust store — that import only exists for
+Windows upstream. Fetch it from `http://localhost:<port>/CERT/root.crt` and
+add it where the client expects it (for curl: `--cacert`; for a browser:
+its own certificate store). To make the CA survive a rebuild of an ephemeral
+root, add `/var/lib/accesser` to `stateDirectories` in
+[`nixos/preservation.nix`](nixos/preservation.nix).
 
 #### nixpak
 
@@ -181,6 +219,7 @@ modules/
 │   ├── packages.nix          # System packages
 │   ├── services.nix          # PipeWire, SSH, Bluetooth, firewall
 │   ├── honk.nix              # honk proxy + doona web UI (gated: machine.modules.honk.enable)
+│   ├── accesser.nix          # Accesser SNI-RST proxy (gated: machine.modules.accesser.enable)
 │   ├── nixpak.nix            # dingtalk sandbox (gated: machine.modules.nixpak.enable)
 │   ├── preservation.nix      # /persist bind mounts (gated: machine.modules.impermanence.enable)
 │   ├── compat.nix            # nix-ld, flatpak, podman, Wine (gated: machine.modules.compat.enable)

@@ -35,6 +35,7 @@
       variable.enable = lib.mkEnableOption "desktop environment variables";
       compat.enable = lib.mkEnableOption "compatibility tools (nix-ld, flatpak, etc.)";
       honk.enable = lib.mkEnableOption "honk network proxy";
+      accesser.enable = lib.mkEnableOption "accesser SNI RST proxy";
       deepseek-harness.enable = lib.mkEnableOption "deepseek-harness web UI service";
       system.enable = lib.mkEnableOption "base system settings (kernel, timezone, locale, boot)";
       services.enable = lib.mkEnableOption "base system services (audio, SSH, bluetooth, printing)";
