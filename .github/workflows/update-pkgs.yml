@@ -45,6 +45,10 @@ jobs:
           git checkout -B ${{ github.ref_name }}
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # The commit the run started from. Every step below leaves its work
+          # uncommitted and the pull-request step squashes the lot into the one
+          # `chore: update ...` commit, so this is what it resets to.
+          echo "base_sha=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
       # Shared by the hash-repair and update steps: every package defined in
       # this flake together with its package.nix, one per line. Only packages
@@ -78,15 +82,17 @@ jobs:
           )
           EOF
 
+      # Nothing is committed here: the pull-request step squashes every change
+      # of this run into the single `chore: update ...` commit. That also keeps
+      # the flake source path stable for the whole run — committing rewrites
+      # the git tree, which re-keys it mid-run.
       - name: Update flake inputs
         id: lock
         env:
           NIXPKGS_ALLOW_UNFREE: "1"
         run: |
           nix flake update
-          if ! git diff --quiet; then
-            git add --all
-            git commit --message "chore(flake): update flake.lock"
+          if ! git diff --quiet -- flake.lock; then
             echo "updated=true" >> "$GITHUB_OUTPUT"
           fi
 
@@ -165,7 +171,11 @@ jobs:
                   break
                 fi
                 echo "attempt $attempt/3 failed for $pkg"
-                git checkout -- "$file" 2>/dev/null || true
+                # Restore the whole package directory, not just package.nix:
+                # update scripts also rewrite Cargo.lock / lockfile siblings,
+                # and with nothing committed yet those would otherwise leak
+                # into the next attempt.
+                git checkout -- "$(dirname "$file")" 2>/dev/null || true
                 if [ "$attempt" -lt 3 ]; then
                   sleep 10
                 fi
@@ -176,18 +186,19 @@ jobs:
                 # line, and every later step (the hash repair, the PR, the
                 # auto-merge) would run on a tree that is already known bad.
                 echo "::error title=nix-update failed::nix-update failed for $pkg"
-                git checkout -- "$file" 2>/dev/null || true
+                git checkout -- "$(dirname "$file")" 2>/dev/null || true
                 exit 1
               fi
-              if ! git diff --quiet; then
+              # Scope the check to the package directory, not the whole tree:
+              # nothing is committed between packages any more, so a tree-wide
+              # diff would flag every package after the first one. The
+              # directory (not just package.nix) also catches the Cargo.lock
+              # and lockfile siblings an update script rewrites.
+              if ! git diff --quiet -- "$(dirname "$file")"; then
                 changed+=("$pkg")
-                git add --all
               fi
             done
 
-            if [ ${#changed[@]} -gt 0 ]; then
-              git commit --message "chore(pkgs): update ${changed[*]}"
-            fi
             {
               echo "### Update pkgs"
               if [ ${#changed[@]} -gt 0 ]; then
@@ -266,8 +277,7 @@ jobs:
           done
 
           if [ ${#changed[@]} -gt 0 ]; then
-            git add --all
-            git commit --message "fix(pkgs): refresh fetch hashes for the new flake.lock (${changed[*]})"
+            echo "repaired: ${changed[*]}"
           fi
           EOF
 
@@ -283,18 +293,59 @@ jobs:
 
       # `main` is protected, so a push to it is rejected: the bot publishes its
       # work as a pull request and turns on auto-merge further down.
+      #
+      # Every earlier step left its work uncommitted on purpose, so this is
+      # where the whole run becomes exactly one commit. Resetting to the base
+      # commit first means a re-run over an existing bot branch does not stack
+      # commits on top of the previous run.
       - name: Open a pull request
         id: pr
         if: steps.lock.outputs.updated == 'true' || steps.pkgs.outputs.updated != ''
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           BASE_BRANCH: ${{ github.ref_name }}
+          LOCK_UPDATED: ${{ steps.lock.outputs.updated }}
+          PKGS_UPDATED: ${{ steps.pkgs.outputs.updated }}
         run: |
           set -euo pipefail
+          # Set by "Config git". Fail loudly instead of resetting to nothing.
+          : "${base_sha:?base_sha is not set; the Config git step must export it}"
           branch=bot/update-pkgs-${BASE_BRANCH}
 
-          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          # `chore: update flake.lock, pkg-a, pkg-b` — the lock entry only
+          # when flake.lock actually moved.
+          parts=()
+          if [ "$LOCK_UPDATED" = "true" ]; then
+            parts+=("flake.lock")
+          fi
+          # PKGS_UPDATED is space-separated on purpose: split it into words.
+          for pkg in $PKGS_UPDATED; do
+            parts+=("$pkg")
+          done
+          if [ ${#parts[@]} -eq 0 ]; then
+            echo "::error title=nothing to commit::no lock or package change was recorded"
+            exit 1
+          fi
+          # "a${IFS:0:1}..." would only use IFS' first character, so join by hand.
+          subject=""
+          for part in "${parts[@]}"; do
+            subject="${subject:+$subject, }$part"
+          done
+          message="chore: update $subject"
+          echo "commit message: $message"
+
+          # Branch first, then commit: resetting moves the branch it is run on,
+          # and that branch is still the protected one at this point.
           git checkout -B "$branch"
+          git reset --mixed "$base_sha"
+          git add --all
+          if git diff --cached --quiet; then
+            echo "::error title=nothing to commit::the run recorded changes but the tree is clean"
+            exit 1
+          fi
+          git commit --message "$message"
+
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push --force origin "$branch"
 
           if [ "$(gh pr list --head "$branch" --state open --json number --jq 'length')" = 0 ]; then
@@ -309,10 +360,13 @@ jobs:
               printf '\nTargeting `%s`, not `main`.\n' "$BASE_BRANCH" >> "$RUNNER_TEMP/pr-body.md"
             fi
             gh pr create --base "$BASE_BRANCH" --head "$branch" \
-              --title "chore(pkgs): automated package and flake.lock updates" \
+              --title "$message" \
               --body-file "$RUNNER_TEMP/pr-body.md"
           else
             echo "updated the existing pull request for $branch"
+            # Keep the title in step with what this run actually touched; the
+            # branch was force-pushed, so the PR head is this run's commit.
+            gh pr edit "$branch" --title "$message"
           fi
 
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
