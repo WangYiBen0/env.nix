@@ -7,6 +7,17 @@ lib.mkIf config.machine.modules.kitty.enable {
 
     enableGitIntegration = true;
 
+    # Kitty watches the OS colour scheme itself (lib/kitty/kitty/colors.py
+    # `ThemeColors.refresh`), so these two files are re-applied on every
+    # light/dark transition without anything having to signal kitty. The
+    # adwaita pair matches the WhiteSur palettes closely enough that the
+    # terminal does not look foreign next to the GTK apps.
+    autoThemeFiles = {
+      light = "adwaita_light";
+      dark = "adwaita_dark";
+      noPreference = "adwaita_dark";
+    };
+
     settings = {
       # 字体设置
       font_family = "Maple Mono NF CN";
