@@ -9,6 +9,7 @@
   pnpm,
   pnpmConfigHook,
   pkg-config,
+  sqlite,
   wrapGAppsHook3,
   glib-networking,
   gtk3,
@@ -68,6 +69,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
     libayatana-appindicator
     libGL
     mpv-unwrapped
+    sqlite
     vulkan-loader
     webkitgtk_4_1
   ];
