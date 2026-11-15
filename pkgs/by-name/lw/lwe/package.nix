@@ -86,7 +86,18 @@ rustPlatform.buildRustPackage (finalAttrs: {
   # The test suite drives GUI/Wayland code paths.
   doCheck = false;
 
-  passthru.updateScript = nix-update-script { };
+  # Upstream publishes every beta as a GitHub release (10 at a time, all
+  # `vX-beta.N+sha`) and keeps the stable tags far down the list. The default
+  # `releases.atom` source only returns the newest 10 entries, so they are all
+  # betas and nix-update filters every one of them out as unstable, then aborts
+  # the whole update run with
+  # `VersionError: Found an unstable version ...`.
+  #
+  # `--use-github-releases` switches to the releases API, which carries a
+  # `prerelease` flag, so the betas are recognised and skipped properly.
+  passthru.updateScript = nix-update-script {
+    extraArgs = [ "--use-github-releases" ];
+  };
 
   meta = {
     description = "Linux desktop app for browsing, managing, and applying Wallpaper Engine content";
