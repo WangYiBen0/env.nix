@@ -100,9 +100,15 @@ jobs:
         id: pkgs
         env:
           NIXPKGS_ALLOW_UNFREE: "1"
-          # honk's updateScript walks the GitHub API; an authenticated call
-          # dodges the shared-runner IP rate limit.
+          # Both names are needed, and they are not interchangeable: `gh` and
+          # honk's updateScript read GH_TOKEN, while nix-update's version
+          # lookup hardcodes GITHUB_TOKEN (`os.environ.get("GITHUB_TOKEN")` in
+          # nix_update/version/github.py). Without the second one every lookup
+          # is anonymous, and 60 unauth requests/hour per runner IP are gone
+          # quickly — which is what turned a version-detection bug into
+          # `HTTPError: HTTP Error 403: rate limit exceeded`.
           GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           # The package list is written by the "Prepare package list" step.
           # nix-update exits non-zero via an uncaught VersionError when the
