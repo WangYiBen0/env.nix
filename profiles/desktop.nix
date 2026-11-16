@@ -28,6 +28,7 @@ lib.mkIf config.machine.profiles.desktop {
 
     # Desktop modules
     niri.enable = true;
+    ironbar.enable = true;
     kitty.enable = true;
     font.enable = true;
     ime.enable = true;

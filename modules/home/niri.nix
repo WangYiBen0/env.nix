@@ -135,6 +135,21 @@ lib.mkIf config.machine.modules.niri.enable {
             { clip-to-geometry = true; }
           ];
         }
+      ]
+      ++ lib.optionals config.machine.modules.ironbar.enable [
+        {
+          # Frost the wallpaper behind the bar and its popups so the
+          # translucent background reads as glass instead of flat grey.
+          layer-rule._children = [
+            { match._props.namespace = "ironbar"; }
+            { background-effect._children = [ { blur = true; } ]; }
+            {
+              popups._children = [
+                { background-effect._children = [ { blur = true; } ]; }
+              ];
+            }
+          ];
+        }
       ];
 
       # Key bindings
