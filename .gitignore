@@ -13,3 +13,6 @@ result-*
 
 # Ignore transient lock files left behind by file-editing tooling
 .dsh-ops-*.lock
+
+# Ignore node_modules (prettier/deadnix should not scan them)
+node_modules/

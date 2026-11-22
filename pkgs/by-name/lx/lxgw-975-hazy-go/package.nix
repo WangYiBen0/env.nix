@@ -13,10 +13,10 @@
 
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "lxgw-hazy-go";
-  version = "2.01-SC";
+  version = "2.01";
 
   src = fetchurl {
-    url = "https://github.com/lxgw/975HazyGo/releases/download/v${finalAttrs.version}/Lxgw975HazyGoSC-TTFs-${finalAttrs.version}.7z";
+    url = "https://github.com/lxgw/975HazyGo/releases/download/v${finalAttrs.version}-SC/Lxgw975HazyGoSC-TTFs-${finalAttrs.version}.7z";
     hash = "sha256-qv0kDCh4ZJN1kpMpyjypISriMu6uAcp8jP5Ad/WZ9wA=";
   };
 

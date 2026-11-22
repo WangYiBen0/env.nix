@@ -19,29 +19,6 @@ lib.mkIf config.machine.modules.font.enable {
       # Extension A, so the GB 18030-2022 level-2 range is complete.
       lxgw-neoxihei-plus
       lxgw-neozhisong
-      lxgw-wenkai-lite
-      lxgw-wenkai-gb
-      lxgw-wenkai-gb-lite
-      lxgw-wenkai-tc
-      lxgw-wenkai-kr
-      lxgw-xihei
-      lxgw-zhisong
-      lxgw-marker-gothic
-      lxgw-marker-gothic-kr
-      lxgw-seal
-      lxgw-yozai
-      lxgw-xiaolai
-      lxgw-pengli-wenkai
-      lxgw-975-yuan
-      lxgw-975-hei
-      lxgw-bright
-      lxgw-bright-code
-      lxgw-hazy-go
-      lxgw-black-sugar-plum-candy
-      lxgw-xihei-partner
-      lxgw-slabmod
-      lxgw-pinyin-font
-      lxgw-neo-xi-hei-tc
       sotyr-fangsong
       zhuque-fangsong
     ])
