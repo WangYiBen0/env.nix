@@ -74,7 +74,11 @@ pkgs/by-name/
 ├── lx/
 │   ├── lxgw-neoxihei-plus/  # LXGW Neo XiHei Plus (CJK Ext-A filled in)
 │   ├── lxgw-neozhisong/     # LXGW Neo ZhiSong
-│   └── lxgw-zhenkai/        # LXGW ZhenKai Slab GB
+│   ├── lxgw-wenkai/         # LXGW WenKai
+│   ├── lxgw-xihei/          # LXGW XiHei
+│   ├── lxgw-zhisong/        # LXGW ZhiSong
+│   └── lxgw-zhenkai/        # LXGW ZhenKai Slab GB (broken)
+│   ... 30+ more LXGW font packages under pkgs/by-name/lx/
 ├── so/sotyr-fangsong/       # Sotyr Fangsong (仲春仿宋)
 ├── zh/zhuque-fangsong/      # Zhuque FangSong
 ├── do/doona/                # doona web UI for honk

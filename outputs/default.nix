@@ -17,6 +17,7 @@ let
       inherit system;
       config = {
         allowUnfree = true;
+        problems.handlers.lxgw-zhenkai.broken = "warn";
       };
       overlays = [ (import ../overlays inputs) ];
     };

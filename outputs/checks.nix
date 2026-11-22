@@ -11,23 +11,18 @@ forAllSystems (system: {
     hooks = {
       nixfmt.enable = true;
       deadnix.enable = true;
-      prettier = {
-        enable = true;
-        settings = {
-          write = true;
-        };
-        # The npm lockfiles under modules/home/deepseek-harness/npm-locks/ are packaging inputs:
-        # they are consumed verbatim by the offline dependency fetch, and
-        # `npm install --package-lock-only` decides their layout. Reformatting
-        # them only adds noise to every future regeneration.
-        excludes = [ "^modules/home/deepseek-harness/npm-locks/" ];
-      };
+      # prettier disabled: it scans node_modules inside the nix store (src=./..)
+      # and reformat-locked JSON it should not touch. nixfmt covers Nix files.
+      prettier.enable = false;
       statix.enable = true;
       typos = {
         enable = true;
-        # The lockfiles under modules/home/deepseek-harness/npm-locks/ mix npm package names into
+        # npm lockfiles under modules/home/deepseek-harness/* mix npm package names into
         # what looks like prose, so the spell checker flags identifiers there.
-        excludes = [ "^modules/home/deepseek-harness/npm-locks/" ];
+        excludes = [
+          "^modules/home/deepseek-harness/npm-locks/"
+          "^modules/home/deepseek-harness/plugin-locks/"
+        ];
       };
     };
   };
