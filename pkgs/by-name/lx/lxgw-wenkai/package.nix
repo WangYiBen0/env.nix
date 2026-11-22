@@ -23,12 +23,14 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   installPhase = ''
     runHook preInstall
 
-    find $src -name '*.ttf' -exec install -Dm644 {} $out/share/fonts/truetype/ \;
-    find $src -name '*.ttf' -exec install -Dm644 {} $out/share/fonts/truetype/ \;
-    find $src -name '*.ttf' -exec install -Dm644 {} $out/share/fonts/truetype/ \;
-    find $src -name '*.ttf' -exec install -Dm644 {} $out/share/fonts/truetype/ \;
-    find $src -name '*.ttf' -exec install -Dm644 {} $out/share/fonts/truetype/ \;
-    find $src -name '*.ttf' -exec install -Dm644 {} $out/share/fonts/truetype/ \;
+    mkdir -p $out/share/fonts/truetype
+
+    find $src -name '*.ttf' -exec install -m644 {} $out/share/fonts/truetype/ \;
+    find $src -name '*.ttf' -exec install -m644 {} $out/share/fonts/truetype/ \;
+    find $src -name '*.ttf' -exec install -m644 {} $out/share/fonts/truetype/ \;
+    find $src -name '*.ttf' -exec install -m644 {} $out/share/fonts/truetype/ \;
+    find $src -name '*.ttf' -exec install -m644 {} $out/share/fonts/truetype/ \;
+    find $src -name '*.ttf' -exec install -m644 {} $out/share/fonts/truetype/ \;
 
     runHook postInstall
   '';

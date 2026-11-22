@@ -20,13 +20,12 @@
 let
   cfg = config.machine.modules.deepseek-harness;
 
-  # Third-party plugins of the `web` profile. Everything except `tui` ships a
-  # compiled tarball and builds without network access; `tui`'s own build
-  # script runs a nested pnpm install that an offline store cannot satisfy, so
-  # it is defined but not activated.
-  plugins = import ./plugins.nix {
-    inherit pkgs;
-    inherit (inputs) deepseek-harnix;
+  # Third-party plugins of the `web` profile via deepseek-harnix's set form:
+  # declarations describe *what*, the lock pins *which bytes*. No hash is
+  # ever hand-written here; `scripts/lock-dsh-plugins.py` owns it.
+  plugins = inputs.deepseek-harnix.lib.mkDshPluginsFor.${pkgs.stdenv.hostPlatform.system} {
+    declarations = ./plugins.nix;
+    pluginLock = ./dsh-plugins.lock.json;
   };
 in
 {
@@ -64,7 +63,7 @@ in
         # The shipped `web` template's own bundle list, so the composition is
         # not spelled out here.
         template = "web";
-        plugins = lib.attrValues (removeAttrs plugins [ "tui" ]);
+        plugins = lib.attrValues plugins;
         # Seeded, not declared: dsh's web UI and model picker own
         # cordis.patch.yml after the first write.
         seedPatches = [
