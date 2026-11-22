@@ -1,0 +1,44 @@
+{
+  lib,
+  fetchurl,
+  nix-update-script,
+  stdenvNoCC,
+}:
+
+# Upstream packaging contract:
+#   * Sim XiZhi (细溪知), a Chinese font
+#   * Archived upstream repo; built from release asset @ 1.103
+#   * TTF file installed: SimXiHei.ttf
+#   * Deprecated: upstream repository is archived and no longer maintained
+
+stdenvNoCC.mkDerivation {
+  pname = "lxgw-sim-xi-hei";
+  version = "1.103";
+
+  src = fetchurl {
+    url = "https://github.com/lxgw/SimXiZhi";
+    hash = "sha256-byl1Wo1QcSEL/ARwXgeZS03+YwC4xv0/8TlwlvZn5J8=";
+  };
+
+  dontUnpack = true;
+
+  installPhase = ''
+    runHook preInstall
+
+    install -Dm644 $src $out/share/fonts/truetype/SimXiHei.ttf
+
+    runHook postInstall
+  '';
+
+  passthru.updateScript = nix-update-script { };
+
+  meta = {
+    description = "Sim XiZhi (细溪知), a Chinese font";
+    homepage = "https://github.com/lxgw/SimXiZhi";
+    license = lib.licenses.ipa;
+    platforms = lib.platforms.all;
+    problems = {
+      deprecated = true;
+    };
+  };
+}
