@@ -17,42 +17,50 @@
 }:
 
 let
-  # Upstream has not tagged the native-API work yet; the doona-facing
-  # release train pins a commit of the `native-api` branch, dated to
-  # match upstream's own `debug.2026.10.4` build id.
-  rev = "aebc0d78d567cac1cd74ee9c56674857c5441451";
-  commitDate = "2026-10-20";
+  # honk is developed on the `main` branch of daeuniverse/honk and is not
+  # tagged there (the newest tag is v0.1.0-beta.6), so the revision is pinned
+  # directly.  The doona-facing native API work that used to live on
+  # Glassyiris/honk's feat/native-api branch has been merged into main.
+  rev = "7cd8b13cd2b71081bd9c554b80a6a0e9a0dbdc04";
+  commitDate = "2026-11-22";
 
-  # crates/honk-ebpf pins nightly-2026-07-20 for rustup users, but that
-  # nightly's toolchain tarballs have since been removed from every
-  # distribution channel (only its rust-src survives). Build the eBPF
-  # object with the newest nightly still published, and patch the pin so
-  # honk-core's build.rs freshness marker stays consistent.
-  #
-  # The pinned nightly emits LLVM 23 objects, so bpf-linker must be built
-  # against LLVM 23 rather than nixpkgs' default LLVM.
-  nightlyChannel = "nightly-2026-10-09";
-  nightlyDate = "2026-10-09";
+  # crates/honk-ebpf pins the nightly that compiles the eBPF object.  The
+  # pin is honoured as-is instead of being rewritten to "whatever nightly is
+  # still downloadable": the channel string is also what honk-core's
+  # build.rs compares against the freshness marker of a prebuilt object, so
+  # a rewritten pin would need the marker rewritten with it.
+  nightlyChannel = "nightly-2026-10-20";
+  nightlyDate = "2026-10-20";
 
   # Artifact names are taken verbatim from the channel manifest of that date.
   rustNightly = fetchurl {
     url = "https://static.rust-lang.org/dist/${nightlyDate}/rust-nightly-x86_64-unknown-linux-gnu.tar.xz";
-    hash = "sha256-kaYIudnKMACCTBnmABVvSuQ5dTefiaQi6sLUqCuIhkM=";
+    hash = "sha256-BohyGBMzHsk2bkUhjR6frsgeFTa7zR0NbSKgGrJTIDg=";
   };
   rustNightlySrc = fetchurl {
     url = "https://static.rust-lang.org/dist/${nightlyDate}/rust-src-nightly.tar.xz";
-    hash = "sha256-IGNnushCGNzyuuTS9RDMRbR1BSCM7uwo3isFUNfOXes=";
+    hash = "sha256-Ie8iCu/xBqHdEdkExpPY9ZZrepTbs2lfUjmr4naxJeI=";
   };
 
+  # The pinned nightly emits LLVM 23 objects, so bpf-linker has to be built
+  # against LLVM 23 rather than nixpkgs' default LLVM.  nixpkgs' rustc 1.99
+  # already ships LLVM 23, so this override only pins the choice.
   bpfLinker = bpf-linker.override { llvmPackagesForLinker = llvmPackages_23; };
+
+  # jq and git are only needed by the update script below; keeping the path
+  # in a let-binding stops nixfmt from reflowing the interpolation.
+  updatePath = lib.makeBinPath [
+    jq
+    git
+  ];
 in
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "honk";
-  version = "0-unstable-${commitDate}";
+  version = "0.1.0-unstable-${commitDate}";
 
   src = fetchurl {
-    url = "https://github.com/Glassyiris/honk/archive/${rev}.tar.gz";
-    hash = "sha256-dP9gZBXuOvKg4T2irKFzNe4hBCyBr9u07AbjX/BHuBc=";
+    url = "https://github.com/daeuniverse/honk/archive/${rev}.tar.gz";
+    hash = "sha256-VEnCTcJUchM5rGoFV/aF2u4IZ6B7qwnsAbvc/AvfBeY=";
   };
 
   cargoDeps = rustPlatform.importCargoLock {
@@ -61,9 +69,9 @@ rustPlatform.buildRustPackage (finalAttrs: {
     # one commit, hence one hash.
     outputHashes = {
       "boring-sys-5.2.0" = "sha256-VG0POjZdA2JazFt1jFe4UfdO01Pw7E1EC/7u8fOmfBs=";
-      "quinn-0.11.12" = "sha256-UIv8chgSqA94r9u+r89z2DsLvdjPJoVJ9llIKvrrX90=";
-      "quinn-proto-0.11.19" = "sha256-UIv8chgSqA94r9u+r89z2DsLvdjPJoVJ9llIKvrrX90=";
-      "quinn-udp-0.5.16" = "sha256-UIv8chgSqA94r9u+r89z2DsLvdjPJoVJ9llIKvrrX90=";
+      "quinn-0.11.12" = "sha256-N3oMkQ+bL0TeObMv5kdODEz8jfQr4wAODKEWqx8aCNI=";
+      "quinn-proto-0.11.19" = "sha256-N3oMkQ+bL0TeObMv5kdODEz8jfQr4wAODKEWqx8aCNI=";
+      "quinn-udp-0.5.16" = "sha256-N3oMkQ+bL0TeObMv5kdODEz8jfQr4wAODKEWqx8aCNI=";
     };
   };
 
@@ -97,7 +105,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
   );
 
   # The eBPF object cannot come from honk-core's build.rs: that script
-  # spawns a nested `cargo +<channel>` build, which presumes rustup. Build
+  # spawns a nested `cargo +${channel}` build, which presumes rustup. Build
   # the object up front with the pinned nightly and hand it to build.rs
   # through its documented fallback path `target/honk-core.o` plus the
   # `honk-core.toolchain` freshness marker.
@@ -187,22 +195,14 @@ rustPlatform.buildRustPackage (finalAttrs: {
   # boring-sys runs bindgen against BoringSSL headers at build time.
   env.LIBCLANG_PATH = lib.makeLibraryPath [ llvmPackages.libclang.lib ];
 
-  # Must be `buildFeatures`, not `cargoBuildFeatures`. buildRustPackage
-  # accepts `buildFeatures` as an argument and re-exports it as
-  # `cargoBuildFeatures` internally, so setting `cargoBuildFeatures` here
-  # is silently shadowed by that re-export and cargo builds with an empty
-  # feature set — honk-core then drops the native-api control plane (and
-  # real eBPF) at runtime.
-  buildFeatures = [
-    "ebpf"
-    "native-api"
+  # The workspace root is a virtual manifest, so a bare feature name does not
+  # resolve; the features have to be qualified with the package that owns
+  # them.  `ebpf` pulls in the real eBPF backend (and honk-nfqueue),
+  # `native-api` the control plane the doona UI talks to.
+  cargoBuildFlags = [
+    "--features"
+    "honk-core/ebpf,honk-core/native-api"
   ];
-
-  postPatch = ''
-    substituteInPlace crates/honk-ebpf/rust-toolchain.toml \
-      --replace-fail 'channel = "nightly-2026-07-20"' \
-      'channel = "${nightlyChannel}"'
-  '';
 
   preBuild = ''
     mkdir -p target
@@ -210,8 +210,8 @@ rustPlatform.buildRustPackage (finalAttrs: {
     # build.rs validates the prebuilt object via `obj.with_extension("toolchain")`,
     # which REPLACES the .o extension — so the marker must be
     # `honk-core.toolchain`, not `honk-core.o.toolchain`. On a mismatch it
-    # concludes the object is stale and shells out to `cargo +<nightly>` to
-    # rebuild it, which cannot work in the sandbox (no rustup). The touch
+    # concludes the object is stale and shells out to `cargo +${nightlyChannel}`
+    # to rebuild it, which cannot work in the sandbox (no rustup). The touch
     # also keeps the object newer than the sources so mtime staleness passes.
     printf '%s' "${nightlyChannel}" > target/honk-core.toolchain
     touch target/honk-core.o target/honk-core.toolchain
@@ -230,56 +230,88 @@ rustPlatform.buildRustPackage (finalAttrs: {
 
   passthru.updateScript = writeShellScript "update-honk" ''
     set -euo pipefail
-    export PATH="${lib.makeBinPath [ jq ]}:$PATH"
+    export PATH="${updatePath}:$PATH"
 
-    # The doona-facing native-api work lives on the Glassyiris fork's
-    # feat/native-api branch (Zakkaus — doona's author — contributes there;
-    # daeuniverse deleted their own native-api branch without merging it).
-    # Walk its head by hand; nix-update cannot follow an untagged branch.
-    # GH_TOKEN dodges the shared-runner IP rate limit.
-    tmp=$(mktemp)
-    code=$(curl -sS -o "$tmp" -w '%{http_code}' \
-      ''${GH_TOKEN:+-H "Authorization: Bearer ''$GH_TOKEN"} \
-      https://api.github.com/repos/Glassyiris/honk/commits/feat/native-api)
-    if [ "$code" = 404 ] || [ "$code" = 422 ]; then
-      echo "honk: feat/native-api is gone from the Glassyiris fork; skipping auto-update" >&2
-      exit 0
-    fi
-    [ "$code" = 200 ] || { echo "error: GitHub API returned HTTP $code" >&2; exit 1; }
-    rev=$(jq -r .sha "$tmp")
-    date=$(jq -r .commit.author.date "$tmp" | cut -dT -f1)
+    # honk is developed on daeuniverse/honk's main branch, which is not
+    # tagged; nix-update cannot follow an untagged branch, so walk its head
+    # by hand.  git ls-remote needs no API token, unlike api.github.com.
+    rev=$(git ls-remote https://github.com/daeuniverse/honk refs/heads/main | cut -f1)
+    [ -n "$rev" ] || { echo "error: could not resolve daeuniverse/honk main" >&2; exit 1; }
 
     expr=pkgs/by-name/ho/honk/package.nix
     [ -f "$expr" ] || { echo "run this from the flake root" >&2; exit 1; }
 
-    sed -i \
-      -e "s|rev = \"[0-9a-f]\{40\}\"|rev = \"$rev\"|" \
-      -e "s|commitDate = \"[0-9-]*\"|commitDate = \"$date\"|" \
-      "$expr"
+    current=$(sed -n 's|^  rev = "\([0-9a-f]\{40\}\)";$|\1|p' "$expr" | head -1)
+    if [ "$rev" = "$current" ]; then
+      echo ">> honk is already at $rev"
+      exit 0
+    fi
 
-    # Refresh the src archive hash and the pinned Cargo.locks from the new
-    # source, then repair the importCargoLock outputHashes through the
-    # build-error loop so the update lands build-verified.
-    src="https://github.com/Glassyiris/honk/archive/$rev.tar.gz"
-    prefetch=$(nix store prefetch-file --json "$src")
-    sri=$(echo "$prefetch" | jq -r .hash)
-    storepath=$(echo "$prefetch" | jq -r .storePath)
-    srcdir=$(mktemp -d)
-    tar -xzf "$storepath" -C "$srcdir"
-    treedir=$(echo "$srcdir"/honk-*)
+    work=$(mktemp -d)
+    trap 'rm -rf "$work"' EXIT
 
-    cp "$treedir/Cargo.lock" pkgs/by-name/ho/honk/Cargo.lock
-    cp "$treedir/crates/honk-ebpf/Cargo.lock" pkgs/by-name/ho/honk/ebpf-Cargo.lock
+    # The commit date only names the build; a shallow clone is enough and
+    # avoids the API's rate limit.
+    git clone --quiet --depth 1 --filter=blob:none https://github.com/daeuniverse/honk "$work/honk"
+    date=$(git -C "$work/honk" log -1 --format=%cs)
+
+    # The eBPF crate pins the nightly that compiles the object; the pin and
+    # the sysroot lockfile follow it.
+    channel=$(sed -n 's|^channel = "\(.*\)"$|\1|p' "$work/honk/crates/honk-ebpf/rust-toolchain.toml" | head -1)
+    nightlyDate=$(printf '%s' "$channel" | sed 's/^nightly-//')
+    [ "$nightlyDate" != "$channel" ] || { echo "error: unexpected toolchain channel $channel" >&2; exit 1; }
+
+    # Refresh the pinned Cargo.locks from the new source.
+    cp "$work/honk/Cargo.lock" pkgs/by-name/ho/honk/Cargo.lock
+    cp "$work/honk/crates/honk-ebpf/Cargo.lock" pkgs/by-name/ho/honk/ebpf-Cargo.lock
+
+    # The sysroot lockfile is the nightly's own library/Cargo.lock.
+    src_tarball="https://static.rust-lang.org/dist/$nightlyDate/rust-src-nightly.tar.xz"
+    nix store prefetch-file --json "$src_tarball" > "$work/src.json"
+    src_hash=$(jq -r .hash "$work/src.json")
+    src_path=$(jq -r .storePath "$work/src.json")
+    tar -xJf "$src_path" -C "$work" --wildcards \
+      "rust-src-nightly/rust-src/lib/rustlib/src/rust/library/Cargo.lock"
+    cp "$work/rust-src-nightly/rust-src/lib/rustlib/src/rust/library/Cargo.lock" \
+      pkgs/by-name/ho/honk/sysroot-Cargo.lock
+
+    nightly_tarball="https://static.rust-lang.org/dist/$nightlyDate/rust-nightly-x86_64-unknown-linux-gnu.tar.xz"
+    nix store prefetch-file --json "$nightly_tarball" > "$work/nightly.json"
+    nightly_hash=$(jq -r .hash "$work/nightly.json")
 
     # The src hash sits on the line after the archive URL. Flag-based
     # matching — a getline here would swallow the URL line into $0. The
     # old value must never be part of the pattern: base64 hashes may
     # contain `/`, which terminates the awk regex literal early.
-    inurl=0
-    awk -v sri="$sri" '
-      /Glassyiris\/honk\/archive\// { inurl = 1; print; next }
-      inurl == 1 && /hash =/ { sub(/hash = "[^"]*"/, "hash = \"" sri "\""); inurl = 0; print; next }
+    src_url="https://github.com/daeuniverse/honk/archive/$rev.tar.gz"
+    nix store prefetch-file --json "$src_url" > "$work/src.json"
+    src_hash=$(jq -r .hash "$work/src.json")
+
+    # Everything the script rewrites lives above the update script itself.
+    # From that line on the file is copied verbatim, so none of the patterns
+    # below can match the awk program that follows them.
+    #
+    # Each hash sits on the line *after* its URL, so a pattern that spans
+    # both cannot match; the URL therefore arms a flag and the next
+    # "hash =" line is rewritten.  The old value must never be part of the
+    # pattern: base64 hashes may contain "/", which terminates the awk
+    # regex literal early.
+    awk -v rev="$rev" -v date="$date" -v channel="$channel" -v nightlyDate="$nightlyDate" \
+        -v nightlyHash="$nightly_hash" -v srcHash="$src_hash" '
+      /passthru\.updateScript/ { copy = 1; print; next }
+      copy == 1 { print; next }
+      /^  rev = "/ { sub(/rev = "[0-9a-f]{40}"/, "rev = \"" rev "\""); print; next }
+      /daeuniverse\/honk\/archive\// { inurl = 1; print; next }
+      inurl == 1 && /hash =/ { sub(/hash = "[^"]*"/, "hash = \"" srcHash "\""); inurl = 0; print; next }
       inurl == 1 { inurl = 0 }
+      /rust-nightly-x86_64-unknown-linux-gnu\.tar\.xz/ { want = "nightly"; print; next }
+      /rust-src-nightly\.tar\.xz/ { want = "src"; print; next }
+      want == "nightly" && /hash =/ { sub(/hash = "[^"]*"/, "hash = \"" nightlyHash "\""); want = ""; print; next }
+      want == "src" && /hash =/ { sub(/hash = "[^"]*"/, "hash = \"" srcHash "\""); want = ""; print; next }
+      want != "" { want = "" }
+      /commitDate =/ { sub(/commitDate = "[0-9-]*"/, "commitDate = \"" date "\""); print; next }
+      /nightlyChannel =/ { sub(/nightlyChannel = "[^"]*"/, "nightlyChannel = \"" channel "\""); print; next }
+      /nightlyDate =/ { sub(/nightlyDate = "[^"]*"/, "nightlyDate = \"" nightlyDate "\""); print; next }
       { print }
     ' "$expr" > "$expr.tmp"
     mv "$expr.tmp" "$expr"
@@ -290,7 +322,6 @@ rustPlatform.buildRustPackage (finalAttrs: {
     for i in $(seq 1 8); do
       if nix build --no-link ".#packages.x86_64-linux.honk" 2>"$err"; then
         echo ">> honk builds against $rev"
-        rm -rf "$srcdir" "$err" "$tmp"
         exit 0
       fi
       specified=$(awk '/^[[:space:]]*specified:/{print $2; exit}' "$err")
@@ -298,7 +329,6 @@ rustPlatform.buildRustPackage (finalAttrs: {
       if [ -z "$specified" ] || [ -z "$got" ]; then
         echo "error: nix build failed without a hash mismatch:" >&2
         cat "$err" >&2
-        rm -rf "$srcdir" "$err" "$tmp"
         exit 1
       fi
       echo ">> repairing $specified -> $got"
@@ -306,14 +336,13 @@ rustPlatform.buildRustPackage (finalAttrs: {
     done
     echo "error: hash mismatches did not settle after 8 repair rounds:" >&2
     cat "$err" >&2
-    rm -rf "$srcdir" "$err" "$tmp"
     exit 1
   '';
 
   meta = {
     description = "eBPF transparent proxy core that powers the doona UI";
     homepage = "https://github.com/daeuniverse/honk";
-    changelog = "https://github.com/Glassyiris/honk/commits/feat/native-api";
+    changelog = "https://github.com/daeuniverse/honk/commits/main";
     license = lib.licenses.gpl3Only;
     platforms = lib.platforms.linux;
     mainProgram = "honk-core";

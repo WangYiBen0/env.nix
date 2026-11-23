@@ -215,7 +215,13 @@ in
 
         environment = {
           RUST_LOG = "info";
-          MIMALLOC_PURGE_DELAY = "0";
+          # honk ships jemalloc as its allocator (the mimalloc default was
+          # dropped upstream in favour of jemalloc), and jemalloc's purge
+          # delay is spelled dirty_decay_ms.  Zero means the pages are
+          # returned to the OS as soon as they are freed instead of being
+          # held in the arena's dirty pages, which is what the mimalloc
+          # setting this replaces did.
+          MALLOC_CONF = "dirty_decay_ms:0";
         };
       };
     };

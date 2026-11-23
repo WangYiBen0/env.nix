@@ -14,6 +14,9 @@
 }:
 
 let
+  # honk pins the doona revision it was tested against in its CI pins file
+  # (DOONA_VERSION / DOONA_REVISION); the tag below resolves to exactly that
+  # commit, so the UI served under /ui/ is the one honk expects.
   version = "0.1.0-rc.6";
 
   # pnpm-workspace.yaml carries `allowBuilds`, so only esbuild's postinstall
@@ -61,6 +64,11 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   # normalises anyway; the compression and layout rules are reproduced here.
   # The order matters: package.sh compresses dist/ before adding the licence
   # files, so only assets Vite emitted ever gain a precompressed sibling.
+  #
+  # honk's native-ui *feature* would embed this tree at build time, but it
+  # also needs a doona-lite sibling directory, and the module serves the UI
+  # from disk instead (experimental.native_api.ui points here).  Serving it
+  # from the store therefore needs no embedding and no doona-lite.
   installPhase = ''
     runHook preInstall
 
