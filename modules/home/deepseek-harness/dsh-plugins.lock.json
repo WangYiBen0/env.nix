@@ -6,10 +6,10 @@
       "version": "1.4.1"
     },
     "background-by-model": {
-      "hash": "sha256-IZEybswf+pHrUUX3yVJ3P2AdnxHcK+We6xZAyQyzncg=",
-      "npmDepsHash": "sha256-5TIkjJbaZXN4UZM0YKcx7qzryiZNVvfA5jUJBm8pvKE=",
+      "hash": "sha256-DgHuOyE9OsMNPKhfRs+viC5vJYPrG/hMdljIWR1Lq1A=",
+      "npmDepsHash": "sha256-XBmkzU6oJubVrZLcCuGBka91s9Au/Atf5jrijjYh2KQ=",
       "npmLockfile": "plugin-locks/background-by-model.package-lock.json",
-      "version": "0.12.5"
+      "version": "0.12.6"
     },
     "chat-import": {
       "hash": "sha256-8zYu7Q782fwodETeC8x8cfH1bRHX8bu0LyLdC2PEe7Y=",
@@ -24,14 +24,14 @@
       "version": "5.10.0"
     },
     "free-search": {
-      "hash": "sha256-qw5roPtsc7XFf7oK9vLrEEId2QuQHgNe5c5ZpPR4QIs=",
-      "version": "0.9.80"
+      "hash": "sha256-cLSSDO8DDXugQfUzlMLVLLR4aPUaVPGItqByKKmEumw=",
+      "version": "0.9.82"
     },
     "market": {
-      "hash": "sha256-ukO+vn/gUqHODD3LayrM/SKcdtq3xb1aZrHl6tXuFok=",
-      "npmDepsHash": "sha256-yhP00Gj6WrvRu0+xUCLXsg/cvJeGU/s4YWA4dDUJguU=",
+      "hash": "sha256-Myt/HlwLnVa+O3guRrQoKPmzu37RCw552THWf4xVuKg=",
+      "npmDepsHash": "sha256-dhZao9+HQkFit9froFGQCVxp4a2DB/uMZIiXYnhLIMs=",
       "npmLockfile": "plugin-locks/market.package-lock.json",
-      "version": "1.77.1"
+      "version": "1.78.0"
     },
     "opencode2dsh": {
       "hash": "sha256-HzK036+8eA3quKQsYChiHvpGwZZkACvodWX3bTNzjQE=",
