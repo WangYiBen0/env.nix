@@ -130,11 +130,14 @@ lib.mkIf config.machine.modules.starship.enable {
           version_format = "v$raw";
         };
 
+        # Disabled because ~/.nix-profile/bin/python on this host is a stray
+        # Python 3.7.4 (installed by hand from cachix/nixpkgs-python) and sits
+        # first on PATH. Starting it costs ~350 ms and routinely exceeds
+        # starship's command timeout, so every prompt printed the
+        # "Executing command ... timed out" warning. Nothing in this
+        # configuration uses that interpreter.
         python = {
-          disabled = false;
-          symbol = "󰌠 ";
-          style = "bold bg:lavender fg:black";
-          format = " 󰜥 [](bold fg:lavender)[$symbol$version](bold bg:lavender fg:black)[](bold fg:lavender)";
+          disabled = true;
         };
 
         nix_shell = {
