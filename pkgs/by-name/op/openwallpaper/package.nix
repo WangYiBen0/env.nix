@@ -307,12 +307,13 @@ symlinkJoin {
     # `nix build .#openwallpaper.src`) can see it.
     inherit src;
 
-    # Upstream has no tags, so nix-update's generic version detection
-    # cannot work (--use-update-script fails with "could not find a url").
-    # Walk the default branch HEAD by hand, like honk's updateScript, and
-    # repair the fetchgit + Go vendor hashes through the build-error loop
-    # so every update lands build-verified. GH_TOKEN dodges the
-    # shared-runner IP rate limit.
+    # Upstream has no tags, so nix-update's release-feed detection cannot
+    # work (--use-update-script fails with "could not find a url"): the
+    # packages here are a symlinkJoin whose only src is the fetchgit tree,
+    # and the tag it would have to read does not exist. Walk the default
+    # branch HEAD by hand and repair the fetchgit + Go vendor hashes
+    # through the build-error loop, so every update lands build-verified.
+    # GH_TOKEN dodges the shared-runner IP rate limit.
     updateScript = writeShellScript "update-openwallpaper" ''
       set -euo pipefail
       export PATH="${

@@ -14,10 +14,13 @@
 }:
 
 let
-  # honk pins the doona revision it was tested against in its CI pins file
-  # (DOONA_VERSION / DOONA_REVISION); the tag below resolves to exactly that
-  # commit, so the UI served under /ui/ is the one honk expects.
-  version = "0.1.0-rc.6";
+  # honk pins the doona release it embeds and tests against in its CI pins
+  # file (DOONA_VERSION / DOONA_REVISION, currently 0.1.0-rc.6 for
+  # v0.1.0-beta.6). This package runs ahead of that pin on purpose: the
+  # NixOS module serves the UI from this directory (native_api.ui) instead
+  # of the copy compiled into honk, so the two only have to agree on the
+  # /ui/ routes and the API the frontend calls.
+  version = "0.1.0-rc.7";
 
   # pnpm-workspace.yaml carries `allowBuilds`, so only esbuild's postinstall
   # is permitted; playwright's browser download never runs. Upstream pins
@@ -32,7 +35,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     owner = "Zakkaus";
     repo = "doona";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-5NRzRlVBbR9gFSZ0leNgnXdtPur0VMId36gKbXbWtQ0=";
+    hash = "sha256-NCte7ebJEwadL3YHQ/5yGuZdjoyW+OhSKlJldWw/Kg0=";
   };
 
   pnpmDeps = fetchPnpmDeps {
