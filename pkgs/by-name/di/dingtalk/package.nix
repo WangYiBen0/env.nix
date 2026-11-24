@@ -66,7 +66,7 @@ let
   # Linux (.deb) release.  Upstream bundles its own OpenSSL 1.1, Qt 5.15, GTK 3
   # and ICU 63; those copies are kept as built (the same choice Flathub makes),
   # so no legacy OpenSSL has to be compiled here.
-  version = "9.0.0.261030001";
+  version = "9.0.0.261118001";
   arch = if stdenv.hostPlatform.isAarch64 then "arm64" else "amd64";
   linuxSrc = fetchurl {
     url = "https://dtapp-pub.dingtalk.com/dingtalk-desktop/xc_dingtalk_update/linux_deb/Release/com.alibabainc.dingtalk_${version}_${arch}.deb";
@@ -74,15 +74,15 @@ let
     # were prefetched from the explicit release URLs.
     hash =
       if stdenv.hostPlatform.isAarch64 then
-        "sha256-UBLTApjSR20sIFXifdx3sdyeUCsEGPqYjpkMNDb94Io="
+        "sha256-J6V6QSyT+fI04opx4LBdEsEDqkdIriQZa7CD559c2Qc="
       else
-        "sha256-kaBDBzrxGg8GPTvixL2m37Y8Mkfv1mypBjCv3h8RLY8=";
+        "sha256-g0BuCIVPC/mfoXVNa2glqctTylr8bqHFADQciM6hR2k=";
   };
 
   # macOS release: a universal .dmg wrapping DingTalkInstaller.pkg.
-  darwinVersion = "9.0.5";
-  darwinInstaller = "59563623";
-  darwinHash = "sha256-j8IfSYxWlSvS/m0DXPyXqkfHXeitAgRJuF8v2X2v4io=";
+  darwinVersion = "9.0.10";
+  darwinInstaller = "60047162";
+  darwinHash = "sha256-LPWYLATFqzHPBoCeKFREqrLlQ90HdNgY22Jd9OishAM=";
   darwinSrc = fetchurl {
     url = "https://dtapp-pub.dingtalk.com/dingtalk-desktop/mac_dmg/Release/DingTalk_v${darwinVersion}-Installer_${darwinInstaller}_universal.dmg";
     hash = darwinHash;

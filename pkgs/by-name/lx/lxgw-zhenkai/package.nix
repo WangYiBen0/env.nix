@@ -24,7 +24,7 @@
 
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "lxgw-zhenkai";
-  version = "0.827";
+  version = "0.828";
 
   src = fetchurl {
     url = "https://github.com/lxgw/LxgwZhenKai/releases/download/v${finalAttrs.version}/LXGWZhenKaiSlabGB-Regular.ttf";
