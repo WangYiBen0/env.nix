@@ -12,11 +12,11 @@
 
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "lxgw-wenkai-screen-mono";
-  version = "1.315";
+  version = "1.530";
 
   src = fetchurl {
     url = "https://github.com/lxgw/LxgwWenKai-Screen/releases/download/v${finalAttrs.version}/LXGWWenKaiMonoScreen.ttf";
-    hash = "sha256-LtPn65DEjwYkX3luE8RYuGDUyAdQeq/6mGmUQsswuew=";
+    hash = "sha256-VYi4Yx5HJQszXdBJkHuCOEXvcJr2Jf8zuv4+yYtI1x8=";
   };
 
   dontUnpack = true;

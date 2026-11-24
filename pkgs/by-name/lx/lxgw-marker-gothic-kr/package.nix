@@ -12,11 +12,11 @@
 
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "lxgw-marker-gothic-kr";
-  version = "1.001";
+  version = "1.001-fix.1";
 
   src = fetchurl {
     url = "https://github.com/lxgw/LxgwMarkerGothicKR/releases/download/v${finalAttrs.version}/LXGWMarkerGothicKR-Regular.ttf";
-    hash = "sha256-eyr2AQsIKdmKDCNmuYQOKiOA8ZfysXuJBEeNRfpWtiY=";
+    hash = "sha256-DnX0Z96cMhgqL+jHY/zKreW1YJ1DoX79ZlOv8+LS1W0=";
   };
 
   dontUnpack = true;
