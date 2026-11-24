@@ -8,7 +8,10 @@
 
 # Upstream packaging contract:
 #   * 975 Hazy Go (975雾凇Go), a Chinese sans-serif font
-#   * Archived upstream repo; built from git snapshot @ 2.01-SC
+#   * Archived upstream repo. The release tag carries the "-SC" (simplified
+#     Chinese) suffix but the asset name does not: tag v2.01-SC publishes
+#     Lxgw975HazyGoSC-TTFs-2.01.7z. `version` is therefore the bare number
+#     and the tag is spelled out around it below.
 #   * TTF file(s) installed: matching *.ttf from source root
 
 stdenvNoCC.mkDerivation (finalAttrs: {
@@ -33,7 +36,15 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     runHook postInstall
   '';
 
-  passthru.updateScript = nix-update-script { };
+  passthru.updateScript = nix-update-script {
+    # releases.atom reports the tag ("v2.01-SC"), so without the regex the
+    # "-SC" lands inside `version` and both the download tag and the asset
+    # name come out wrong. Keep only the number.
+    extraArgs = [
+      "--version-regex"
+      "v?([0-9.]+)-SC"
+    ];
+  };
 
   meta = {
     description = "975 Hazy Go (975雾凇Go), a Chinese sans-serif font";
