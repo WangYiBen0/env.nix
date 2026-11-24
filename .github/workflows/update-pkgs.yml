@@ -101,11 +101,11 @@ jobs:
         env:
           NIXPKGS_ALLOW_UNFREE: "1"
           # Both names are needed, and they are not interchangeable: `gh` and
-          # honk's updateScript read GH_TOKEN, while nix-update's version
-          # lookup hardcodes GITHUB_TOKEN (`os.environ.get("GITHUB_TOKEN")` in
-          # nix_update/version/github.py). Without the second one every lookup
-          # is anonymous, and 60 unauth requests/hour per runner IP are gone
-          # quickly — which is what turned a version-detection bug into
+          # openwallpaper's updateScript read GH_TOKEN, while nix-update's
+          # version lookup hardcodes GITHUB_TOKEN (`os.environ.get("GITHUB_TOKEN")`
+          # in nix_update/version/github.py). Without the second one every
+          # lookup is anonymous, and 60 unauth requests/hour per runner IP are
+          # gone quickly — which is what turned a version-detection bug into
           # `HTTPError: HTTP Error 403: rate limit exceeded`.
           GH_TOKEN: ${{ github.token }}
           GITHUB_TOKEN: ${{ github.token }}
