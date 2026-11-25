@@ -29,7 +29,18 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     runHook postInstall
   '';
 
-  passthru.updateScript = nix-update-script { };
+  # Every published tag is `v0.001-alpha.N.M`, and nix-update rejects
+  # pre-release tags unless told to accept them ("Found an unstable version
+  # v0.001-alpha.10.8, which is being ignored"). The flag has to be here
+  # rather than on the bot's command line: --use-update-script runs this
+  # script and then re-detects the version itself, so a failure inside it
+  # aborts the package just the same.
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--version"
+      "unstable"
+    ];
+  };
 
   meta = {
     description = "LXGW Seal (霞鹜篆书), a Chinese seal-script font";

@@ -1,7 +1,6 @@
 {
   lib,
   fetchzip,
-  nix-update-script,
   stdenvNoCC,
 }:
 
@@ -33,7 +32,10 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     runHook postInstall
   '';
 
-  passthru.updateScript = nix-update-script { };
+  # No passthru.updateScript: upstream publishes no tags for this repository
+  # (git ls-remote --tags returns nothing), so the version is a pinned commit
+  # hash and nix-update's release-feed detection has nothing to read. Adding
+  # the script back makes every bot run fail for this package.
 
   meta = {
     description = "LXGW Neo XiHei TC (霞鹜新溪黑繁体), Traditional Chinese variant of Neo XiHei";
