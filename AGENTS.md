@@ -137,6 +137,14 @@ enables auto-merge.
   `nix-update` inside a package's `updateScript` runs unpatched.
 - **A package whose update script breaks fails the run on purpose**, at that
   package, so the PR is never opened on a tree known to be bad.
+- **`--use-update-script` still detects the version itself.** It runs the
+  package's script and then *re-runs* release detection on the result, so a
+  flag that only fixes the inner call does not help — the outer one fails the
+  same way. Pre-release tags therefore need `--version unstable` inside
+  `nix-update-script { extraArgs = ...; }` (see `honk`, `lxgw-seal`), and a
+  repository whose versions are bare commit hashes cannot use the script at
+  all: with no tags, detection raises `VersionError` before the script runs.
+  Those packages drop `passthru.updateScript` and say why in a comment.
 - **Packages must not rely on being committed** during the run: the run works
   on a dirty tree the whole time.
 
