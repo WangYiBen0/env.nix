@@ -7,17 +7,20 @@
 
 # Upstream packaging contract:
 #   * Fanmei (梵米), a Chinese sans-serif font
-#   * Archived upstream repo; built from release asset @ 1.000
-#   * TTF file installed: Fanmei-Ming.ttf
-#   * Deprecated: upstream repository is archived and no longer maintained
+#   * Repository lxgw/Fanmei publishes several TTFs per release and this
+#     package installs exactly one of them; the package name describes the
+#     font file, not the repository.
+#   * The tag is v1.000 and the asset name carries no version of its own, so
+#     both are written out here rather than derived from `version`.
+#   * Deprecated: upstream repository is archived and no longer maintained.
 
 stdenvNoCC.mkDerivation {
   pname = "lxgw-fanmei-ming";
   version = "1.000";
 
   src = fetchurl {
-    url = "https://github.com/lxgw/Fanmei";
-    hash = "sha256-MwVnA6wQCwuzngJpdAckM5EGpEW75mo8lWCOCYPf86M=";
+    url = "https://github.com/lxgw/Fanmei/releases/download/v1.000/Fanmei-Ming.ttf";
+    hash = "sha256-cB4KYwhE26CIZBSvLQy3XUDA81ACHmACDUmzoWGp620=";
   };
 
   dontUnpack = true;
@@ -37,8 +40,11 @@ stdenvNoCC.mkDerivation {
     homepage = "https://github.com/lxgw/Fanmei";
     license = lib.licenses.bsd0;
     platforms = lib.platforms.all;
-    problems = {
-      deprecated = true;
+    # nixpkgs' meta.problems values are records carrying a message
+    # (pkgs/stdenv/generic/problems.nix); a bare boolean makes any access to
+    # meta.problems throw.
+    problems.deprecated = {
+      message = "Upstream repository is archived and no longer maintained";
     };
   };
 }
