@@ -6,18 +6,21 @@
 }:
 
 # Upstream packaging contract:
-#   * LXGW Neo XiZhi Screen (霞鹜新溪知屏), a Chinese font optimized for screens
-#   * Archived upstream repo; built from release asset @ 26.11.11
-#   * TTF file installed: LXGWNeoXiHeiScreenFull.ttf
-#   * Deprecated: upstream repository is archived and no longer maintained
+#   * LXGW Neo XiHei Screen Full, a Chinese font from the LxgwNeoXiZhi-Screen release.
+#     One repository publishes four TTFs (NeoXiHei / NeoZhiSong, each plain
+#     and "Full"), and this package installs exactly one of them;
+#     lxgw-neoxizhi-screen-full names the font, not the repository.
+#   * The tag is a bare date with no "v" prefix, and the asset name carries
+#     no version of its own, so both are spelled out below.
+#   * Deprecated: upstream repository is archived and no longer maintained.
 
 stdenvNoCC.mkDerivation {
   pname = "lxgw-neo-xi-zhi-screen-full";
   version = "26.11.11";
 
   src = fetchurl {
-    url = "https://github.com/lxgw/LxgwNeoXiZhi-Screen";
-    hash = "sha256-i0V4Y9/mu8smDaGhAj6L3fu6NLfEH2pQsIO487aUvvk=";
+    url = "https://github.com/lxgw/LxgwNeoXiZhi-Screen/releases/download/26.11.11/LXGWNeoXiHeiScreenFull.ttf";
+    hash = "sha256-yJNNgFo3LvfaqpHzUIrAJTJM9UsujeusyVADBnVG8Ok=";
   };
 
   dontUnpack = true;
@@ -33,12 +36,15 @@ stdenvNoCC.mkDerivation {
   passthru.updateScript = nix-update-script { };
 
   meta = {
-    description = "LXGW Neo XiZhi Screen (霞鹜新溪知屏), a Chinese font optimized for screens";
+    description = "LXGW Neo XiHei Screen Full, a Chinese font optimized for screens";
     homepage = "https://github.com/lxgw/LxgwNeoXiZhi-Screen";
     license = lib.licenses.ipa;
     platforms = lib.platforms.all;
-    problems = {
-      deprecated = true;
+    # nixpkgs' meta.problems values are records carrying a message
+    # (pkgs/stdenv/generic/problems.nix); a bare boolean makes any access to
+    # meta.problems throw.
+    problems.deprecated = {
+      message = "Upstream repository is archived and no longer maintained";
     };
   };
 }
