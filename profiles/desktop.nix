@@ -9,7 +9,6 @@ lib.mkIf config.machine.profiles.desktop {
     # Feature bundles
     desktop.enable = true;
     compat.enable = true;
-    honk.enable = true;
     nixpak.enable = true;
 
     # NixOS base

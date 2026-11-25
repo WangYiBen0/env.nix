@@ -41,19 +41,24 @@ Directories are imported by `lib.scanNixFiles`, which loads every `.nix` file th
 | desktop      | `machine.modules.desktop.enable`      | Desktop session: plasma + niri, desktop apps, firewall exceptions |
 | font         | `machine.modules.font.enable`         | System fonts (Noto, Maple Mono, JetBrains Mono, …)                |
 | compat       | `machine.modules.compat.enable`       | nix-ld, flatpak, podman, Wine                                     |
-| honk         | `machine.modules.honk.enable`         | honk transparent proxy + doona web UI                             |
-| accesser     | `machine.modules.accesser.enable`     | Accesser SNI-RST HTTPS proxy (local PAC server)                   |
-| system       | `machine.modules.system.enable`       | Base system: kernel, timezone, locale, boot                       |
-| services     | `machine.modules.services.enable`     | Base services: PipeWire, SSH, bluetooth, printing                 |
-| packages     | `machine.modules.packages.enable`     | System packages (shared with the HM side)                         |
-| nix          | `machine.modules.nix.enable`          | Nix settings, caches, GC (shared with common/ and HM)             |
-| nixpak       | `machine.modules.nixpak.enable`       | Bubblewrap sandbox for closed-source apps (dingtalk)              |
-| impermanence | `machine.modules.impermanence.enable` | Bind-mounts state from `/persist` (preservation)                  |
+| honk         | `services.honk-dae.enable` (plain NixOS module) | honk transparent proxy + doona web UI                  |
 
-#### honk options
+#### honk
+
+honk is not a `machine.*` module: it is written as an ordinary NixOS module
+under `services.honk-dae`, with no reference to this repository, so it can be
+lifted into nixpkgs as-is. `modules/nixos/desktop.nix` turns it on for the
+desktop module; the `machine.*` table does not list it. The attribute is
+`honk-dae` rather than `honk` because nixpkgs already spent that name on the
+honk.me mail stack and `nixos/modules/rename.nix` still tombstones it, so
+declaring `services.honk` collides during evaluation. The systemd unit keeps
+the binary's own name, `honk-core`.
 
 | Option             | Default              | Description                                                              |
 | ------------------ | -------------------- | ------------------------------------------------------------------------ |
+| `enable`           | `false`              | Start honk-core and install the UI                                       |
+| `package`          | `pkgs.honk`          | Package providing `honk-core`                                            |
+| `doona`            | `pkgs.doona`         | Web UI served from its `share/doona`                                     |
 | `settings`         | direct-only fallback | honk's base config in dae syntax, installed to `/var/lib/honk/base.dae`  |
 | `api.listen`       | `127.0.0.1:9527`     | Native API and doona UI bind address                                     |
 | `api.port`         | `9527`               | Port opened in the firewall                                              |
@@ -61,12 +66,26 @@ Directories are imported by `lib.scanNixFiles`, which loads every `.nix` file th
 | `api.secret`       | `null`               | API token instead of password login                                      |
 | `api.configWrite`  | `true`               | Let the UI edit nodes, subscriptions and rules                           |
 
-The `experimental.native_api` block is appended to the main config from the
-`api.*` options; honk serves doona from the package's `share/doona` at `/ui/`.
-honk resolves `include` against the canonical path of its config file, which
-breaks for NixOS's `/nix/store` symlinks, so everything lives in one file.
-honk reads its config once at startup, so the file is embedded in the unit as
-a restart trigger — `nixos-rebuild switch` restarts honk whenever it changes.
+Three files under `/var/lib/honk`, because doona refuses to edit any file that
+contains an API block:
+
+| File         | Owner   | Rewritten                                                  |
+| ------------ | ------- | ---------------------------------------------------------- |
+| `config.dae` | UI      | seeded once; the UI's subscriptions and mode rule live here |
+| `base.dae`   | UI      | seeded once; `settings`, routing and DNS                    |
+| `api.dae`    | Nix     | every start, from the `api.*` options                      |
+
+honk reads its config once at startup, so `base.dae` and `api.dae` are
+embedded in the unit as restart triggers — `nixos-rebuild switch` restarts honk
+whenever the Nix-owned configuration changes, while UI edits survive restarts.
+
+`config.dae` carries an empty `routing {}` block on purpose. doona's
+outbound-mode switch edits the routing block of the file honk labels as the
+"main" source, and that is always the entry file; with routing only in an
+include the UI fails with "the main configuration has no routing section".
+Empty is safe — honk concatenates same-named sections instead of replacing
+them — and `ExecStartPre` appends the block to entries seeded before it existed.
+
 `settings` also pins `global.nfqueue_enable: false`; when NFQUEUE is
 unavailable honk downgrades the key in the running config but not in the file,
 and that restart-required drift makes every managed config write (adding a
@@ -256,7 +275,7 @@ modules/
 │   ├── system.nix            # Networking, timezone, locale, boot
 │   ├── packages.nix          # System packages
 │   ├── services.nix          # PipeWire, SSH, Bluetooth, firewall
-│   ├── honk.nix              # honk proxy + doona web UI (gated: machine.modules.honk.enable)
+│   ├── honk.nix              # honk proxy + doona web UI (gated: services.honk-dae.enable)
 │   ├── accesser.nix          # Accesser SNI-RST proxy (gated: machine.modules.accesser.enable)
 │   ├── nixpak.nix            # dingtalk sandbox (gated: machine.modules.nixpak.enable)
 │   ├── preservation.nix      # /persist bind mounts (gated: machine.modules.impermanence.enable)
