@@ -38,11 +38,11 @@ let
 in
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "honk";
-  version = "0.1.0-beta.6";
+  version = "0.1.0-beta.7";
 
   src = fetchurl {
     url = "https://github.com/daeuniverse/honk/releases/download/v${finalAttrs.version}/honk-core-v${finalAttrs.version}-${target}-${variant}.tar.gz";
-    hash = "sha256-J4O48IVvwa7NHNHZEdmpBMWTzVB89h5fok+9cHUxckQ=";
+    hash = "sha256-nz0iSo3OOPfhUcYUB6tu3bPHoYJ18T6zdDMCsaEgxmw=";
   };
 
   dontConfigure = true;
