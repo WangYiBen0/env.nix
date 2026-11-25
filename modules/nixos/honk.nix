@@ -33,7 +33,36 @@ let
   # include file or the UI's simple-mode rule editing stays disabled.
   baseConfig = pkgs.writeText "honk-base.dae" cfg.settings;
   apiConfig = pkgs.writeText "honk-api.dae" apiConfigText;
-  entrySeed = pkgs.writeText "honk-entry.dae" "include {\n    'base.dae'\n}\ninclude {\n    'api.dae'\n}\n";
+
+  # The entry file carries an *empty* routing block on purpose. doona's
+  # outbound-mode switch (全局/直连/规则) does not send a config value: it
+  # splices a top-priority `must` rule into the routing block of whichever
+  # source honk reports with kind "main"
+  # (crates/honk-core/src/native_api/config.rs, `"kind": if index==0 {"main"}`),
+  # and index 0 is always the entry file. With routing and the API block both
+  # living in includes, that text edit finds no routing block and the UI fails
+  # with "主配置未包含 routing 区段" ("the main configuration has no routing
+  # section") before it ever reaches honk.
+  #
+  # An empty block is a safe placeholder because honk merges same-named
+  # sections statement by statement rather than replacing them
+  # (parser/mod.rs collects every `routing` segment into one list and
+  # routing::parse_section walks them as a single body), so the rules in
+  # base.dae still apply. Verified with honk-core v0.1.0-beta.7: two rules in
+  # base.dae load as "0 groups, 2 routing rules" both with and without this
+  # block. Do not move the rules here to "make it look right" — doona rewrites
+  # this file, base.dae is the one seeded once and left alone.
+  entrySeed = pkgs.writeText "honk-entry.dae" ''
+    include {
+        'base.dae'
+    }
+    include {
+        'api.dae'
+    }
+
+    routing {
+    }
+  '';
 in
 {
   # `enable` lives in modules/common/options.nix, alongside every other module.
@@ -195,10 +224,19 @@ in
             fi
             if [ ! -e /var/lib/honk/config.dae ]; then
               install -Dm0600 ${entrySeed} /var/lib/honk/config.dae
-            elif ! grep -q "'api.dae'" /var/lib/honk/config.dae; then
-              # Entries written by the old layout only include base.dae;
-              # honk accepts multiple include blocks, so append one.
-              printf "\ninclude {\n    'api.dae'\n}\n" >> /var/lib/honk/config.dae
+            else
+              # Entries written by the old layout only include base.dae; honk
+              # accepts multiple include blocks, so append one.
+              if ! grep -q "'api.dae'" /var/lib/honk/config.dae; then
+                printf "\ninclude {\n    'api.dae'\n}\n" >> /var/lib/honk/config.dae
+              fi
+              # Entries seeded before the routing placeholder existed make
+              # doona's outbound-mode switch fail; see the comment on
+              # entrySeed. Only the block *header* is appended, never a
+              # closing brace on its own.
+              if ! grep -qE '^[[:space:]]*routing[[:space:]]*\{' /var/lib/honk/config.dae; then
+                printf "\nrouting {\n}\n" >> /var/lib/honk/config.dae
+              fi
             fi
           '';
           ExecReload = "${pkgs.honk}/bin/honk-core reload";
