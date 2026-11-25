@@ -6,6 +6,13 @@
 }:
 
 lib.mkIf config.machine.modules.desktop.enable {
+  # honk is a plain NixOS module (services.honk-dae), not one of the machine.*
+  # ones, so it cannot be enabled from a profile: profiles/ is injected into
+  # Home Manager as well, and HM has no services.honk-dae option. Enabling it
+  # from this NixOS-only module keeps a desktop with honk working without
+  # teaching the Home Manager side about it.
+  services.honk-dae.enable = true;
+
   services = {
     displayManager = {
       plasma-login-manager.enable = true;
