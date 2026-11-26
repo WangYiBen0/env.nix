@@ -77,11 +77,32 @@ rustPlatform.buildRustPackage (finalAttrs: {
     lockFile = ./ebpf-Cargo.lock;
   };
 
-  # -Zbuild-std also resolves the sysroot's own registry dependencies
-  # (library/Cargo.lock ships inside the rust-src component); vendor them
-  # alongside the crate's so the offline build can resolve both graphs.
+  # -Zbuild-std also resolves the sysroot's own registry dependencies, and
+  # that graph is unrelated to the eBPF crate's (50 packages, 6 of them in
+  # common), so it needs its own lockfile and its own vendor. The lockfile is
+  # not committed: it belongs to the pinned nightly, not to this repository,
+  # and the rust-src tarball above already contains it. Extracting it here
+  # means a nightly bump cannot leave a stale sysroot lock behind, and the
+  # package directory stays one lockfile lighter.
+  sysrootLock = stdenv.mkDerivation {
+    pname = "honk-sysroot-lock";
+    inherit (finalAttrs) version;
+    dontUnpack = true;
+    dontBuild = true;
+    dontFixup = true;
+    installPhase = ''
+      runHook preInstall
+      tar -xJf ${rustNightlySrc} -C . \
+        --wildcards "rust-src-nightly/rust-src/lib/rustlib/src/rust/library/Cargo.lock"
+      install -Dm644 \
+        rust-src-nightly/rust-src/lib/rustlib/src/rust/library/Cargo.lock \
+        $out
+      runHook postInstall
+    '';
+  };
+
   sysrootCargoDeps = rustPlatform.importCargoLock {
-    lockFile = ./sysroot-Cargo.lock;
+    lockFile = finalAttrs.sysrootLock;
   };
 
   # Cargo accepts exactly one directory source, so merge the two vendors.
@@ -139,7 +160,11 @@ rustPlatform.buildRustPackage (finalAttrs: {
       # awkward to keep intact inside a Nix indented string.
       find "$toolchain" -type f -exec sh -c '
         f="$1"
-        [ "$(head -c 4 "$f")" = "$(printf "\\177ELF")" ] || exit 0
+        # Read the magic number without command substitution: a non-ELF file
+        # can hold a NUL in its first four bytes and $() drops it with an
+        # "ignored null byte in input" warning.
+        magic=$(dd if="$f" bs=1 count=4 2>/dev/null | od -An -tx1 | tr -d " \n")
+        [ "$magic" = "7f454c46" ] || exit 0
         if patchelf --print-interpreter "$f" >/dev/null 2>&1; then
           patchelf --set-interpreter "$2" --set-rpath "$3" "$f"
         else
