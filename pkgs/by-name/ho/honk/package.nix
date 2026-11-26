@@ -61,13 +61,16 @@ rustPlatform.buildRustPackage (finalAttrs: {
     lockFile = ./Cargo.lock;
     # [patch.crates-io] replaces four crates with Glassyiris forks: boring-sys
     # (the rprx/REALITY ClientHello hooks) and the quinn trio (receive
-    # fragmentation bounds, BBRv3 pacing). The three quinn crates share one
-    # repository commit, so they share one hash.
+    # fragmentation bounds, BBRv3 pacing).
+    #
+    # One entry per *repository*, not per crate: importCargoLock maps each
+    # name-version pair to its commit SHA and looks the hash up by that SHA, so
+    # the three quinn crates share this single line. Spelling all three out
+    # would duplicate the same hash; nix-update collapses it on the next run
+    # anyway.
     outputHashes = {
       "boring-sys-5.2.0" = "sha256-VG0POjZdA2JazFt1jFe4UfdO01Pw7E1EC/7u8fOmfBs=";
       "quinn-0.11.12" = "sha256-86/NY/NkN5F2omHPusN/GddwhUDfYEX8SsTCqztLwr0=";
-      "quinn-proto-0.11.19" = "sha256-86/NY/NkN5F2omHPusN/GddwhUDfYEX8SsTCqztLwr0=";
-      "quinn-udp-0.5.16" = "sha256-86/NY/NkN5F2omHPusN/GddwhUDfYEX8SsTCqztLwr0=";
     };
   };
 
