@@ -137,14 +137,29 @@ enables auto-merge.
   `nix-update` inside a package's `updateScript` runs unpatched.
 - **A package whose update script breaks fails the run on purpose**, at that
   package, so the PR is never opened on a tree known to be bad.
-- **`--use-update-script` still detects the version itself.** It runs the
-  package's script and then *re-runs* release detection on the result, so a
-  flag that only fixes the inner call does not help — the outer one fails the
-  same way. Pre-release tags therefore need `--version unstable` inside
-  `nix-update-script { extraArgs = ...; }` (see `honk`, `lxgw-seal`), and a
-  repository whose versions are bare commit hashes cannot use the script at
-  all: with no tags, detection raises `VersionError` before the script runs.
-  Those packages drop `passthru.updateScript` and say why in a comment.
+- **`--use-update-script` does not detect anything itself.** It builds the
+  script from `passthru.updateScript`, runs it under `nix develop`, re-evaluates
+  the package and returns. `nix-update-script` expands to a plain nested
+  `nix-update` invocation, so everything — version detection, source hash,
+  `Cargo.lock` regeneration, `outputHashes` — happens in that inner run.
+  Consequences worth knowing:
+  - Flags that the inner run needs must live in `extraArgs`; the outer command
+    line cannot supply them. Pre-release tags need `--version unstable`
+    (see `honk`, `lxgw-seal`), and a repository with no tags at all cannot use
+    a script — the inner run raises `VersionError`. Those packages drop
+    `passthru.updateScript` and say why in a comment.
+  - `Cargo.lock` *is* regenerated on a version bump: the inner run rebuilds the
+    package with `cargoDeps = null` and copies the lockfile out of the new
+    source tree.
+  - `outputHashes` are recomputed and **deduplicated per git commit**:
+    `_process_git_dependencies` keys on the `rev` from the lockfile source, so
+    a repository that supplies several crates (a Cargo workspace patched in via
+    `[patch.crates-io]`) keeps one entry, named after the first crate seen.
+    That matches `importCargoLock`, which already maps name-version pairs to
+    commit SHAs and needs the hash only once per repository — so a shrinking
+    `outputHashes` block in the diff is normal, not a regression. It does mean
+    the surviving key names an arbitrary member of the group; do not "fix" the
+    block by hand to list every crate.
 - **Packages must not rely on being committed** during the run: the run works
   on a dirty tree the whole time.
 
