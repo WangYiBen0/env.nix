@@ -286,11 +286,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795534022,
-        "narHash": "sha256-xkRZ+PcPWaAyf9YrEBszYD5w2S6/Ac2tIfsufzd4dEQ=",
+        "lastModified": 1795618997,
+        "narHash": "sha256-d9Osol//t6hqeo1xlspsYMbhTJK507h6t0EmPyF5Db0=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "b56bcd042b5e69ad188eca20d9bec1bfbf3dd453",
+        "rev": "6a13737c0ed27c7c285f59e3be423ed972aa605f",
         "type": "github"
       },
       "original": {
@@ -425,11 +425,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795055727,
-        "narHash": "sha256-pGD+0IiMZXW7qSHSIkoyF2sf7TDhsWqsdcoEEmIvdho=",
+        "lastModified": 1795660148,
+        "narHash": "sha256-ZGqX61iIiUO7CDLTvbhvy6Npwq3+Va1axtUoelu7eyY=",
         "owner": "nixpak",
         "repo": "nixpak",
-        "rev": "cac23d811e3793588eb3be1df3be9fb78ee22e1e",
+        "rev": "de35dcd3478c078d6a679031f002b18c7d2d532f",
         "type": "github"
       },
       "original": {
@@ -488,11 +488,11 @@
         "nixvim": "nixvim_2"
       },
       "locked": {
-        "lastModified": 1794946900,
-        "narHash": "sha256-Cq52BtLsqae1zIbcn5/T/CAk4BiIjuDfLaml3ypFPnQ=",
+        "lastModified": 1795640260,
+        "narHash": "sha256-ds9c2EgYPI+XJw1BIuV3MErqVqXq1BzhOd6vAXw7al4=",
         "owner": "WangYiBen0",
         "repo": "nixvim.nix",
-        "rev": "5a7c481891ccf501415e054618e19dd39420b1ea",
+        "rev": "92b329e40e130dffe5f1f0118cff92ce9e3aa82d",
         "type": "github"
       },
       "original": {
@@ -669,11 +669,11 @@
         "spotx-bash": "spotx-bash"
       },
       "locked": {
-        "lastModified": 1795478286,
-        "narHash": "sha256-yHrzc53w8i0sYxg2O+N1KiRs5yx6jyzTq11fCU//YXY=",
+        "lastModified": 1795643162,
+        "narHash": "sha256-EsfaZ/UZlyC5m4LKrgKq+vJkehVK4Lc7yfkF+s+2ydY=",
         "owner": "SpotX-Official",
         "repo": "SpotX-Nix",
-        "rev": "d84e519addf7bb24c7848fb166eacc7b6e6e6a9d",
+        "rev": "8609f38c68d05830f211b4b52f267707e6c6826c",
         "type": "github"
       },
       "original": {
@@ -685,11 +685,11 @@
     "spotx-bash": {
       "flake": false,
       "locked": {
-        "lastModified": 1795446718,
-        "narHash": "sha256-BZnkABxRs1X4KfYGY8Y88bmxzw9c5ZDxjM6XRwATdYQ=",
+        "lastModified": 1795624376,
+        "narHash": "sha256-UxR7KDuBeXbsfpxLdrCGHHtObE8Pn9zidtjsj+agdpk=",
         "owner": "SpotX-Official",
         "repo": "SpotX-Bash",
-        "rev": "bd88fc8187834ae6a14998dc66f13bdfbb9f9ba7",
+        "rev": "6416a8b7d8b7601933836c59360a2a5e1e1db12c",
         "type": "github"
       },
       "original": {
