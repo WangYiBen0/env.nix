@@ -66,7 +66,7 @@ let
   # Linux (.deb) release.  Upstream bundles its own OpenSSL 1.1, Qt 5.15, GTK 3
   # and ICU 63; those copies are kept as built (the same choice Flathub makes),
   # so no legacy OpenSSL has to be compiled here.
-  version = "9.0.0.261118001";
+  version = "9.0.0.261125002";
   arch = if stdenv.hostPlatform.isAarch64 then "arm64" else "amd64";
   linuxSrc = fetchurl {
     url = "https://dtapp-pub.dingtalk.com/dingtalk-desktop/xc_dingtalk_update/linux_deb/Release/com.alibabainc.dingtalk_${version}_${arch}.deb";
@@ -74,9 +74,9 @@ let
     # were prefetched from the explicit release URLs.
     hash =
       if stdenv.hostPlatform.isAarch64 then
-        "sha256-J6V6QSyT+fI04opx4LBdEsEDqkdIriQZa7CD559c2Qc="
+        "sha256-v+WqJME9JfRDhvFj9B1j4R4mqg31BJY5BSTGHJ4zJgI="
       else
-        "sha256-g0BuCIVPC/mfoXVNa2glqctTylr8bqHFADQciM6hR2k=";
+        "sha256-yqyxaKYzDUlIrmTMobgPhknTNhbzyjdagOELmsccQYY=";
   };
 
   # macOS release: a universal .dmg wrapping DingTalkInstaller.pkg.
